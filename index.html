@@ -180,7 +180,7 @@
                     const lastActiveView = localStorage.getItem('activeView');
                     let localPrimaryUser = localStorage.getItem('primaryUser');
 
-                    if (docSnap.exists()) {
+                    if (docSnap.exists() && Object.keys(docSnap.data().users).length > 0) {
                         appState.users = docSnap.data().users;
                         if (!localPrimaryUser || !appState.users[localPrimaryUser]) {
                             localPrimaryUser = Object.keys(appState.users)[0];
@@ -191,9 +191,10 @@
                     } else {
                         const defaultUser = '래민';
                         appState.users = { [defaultUser]: { password: null, hasNew: false } };
-                        appState.activeView = 'feed';
+                        appState.activeView = defaultUser;
                         appState.primaryUser = defaultUser;
                         localStorage.setItem('primaryUser', defaultUser);
+                        localStorage.setItem('activeView', defaultUser);
                         await setDoc(metadataRef, { users: appState.users });
                     }
                     if (appState.activeView !== 'feed' && appState.users[appState.activeView] && appState.users[appState.activeView].hasNew) {
@@ -294,6 +295,7 @@
                     const q = query(commentsRef, orderBy("createdAt", "asc"));
                     commentsUnsubscribe = onSnapshot(q, (snapshot) => {
                         const commentsSection = document.getElementById('comments-section');
+                        if (!commentsSection) return;
                         commentsSection.innerHTML = '';
                         snapshot.forEach(doc => {
                             const comment = doc.data();
@@ -329,7 +331,7 @@
                     tab.textContent = user;
                     tab.dataset.user = user;
                     if (appState.users[user].hasNew) tab.innerHTML += `<span class="new-badge">New</span>`;
-                    if (Object.keys(appState.users).length > 1 && Object.keys(appState.users)[0] !== user) {
+                    if (Object.keys(appState.users).length > 0) {
                         tab.innerHTML += `<span class="delete-user-btn absolute -top-1 -right-1 text-red-500 bg-white rounded-full w-4 h-4 flex items-center justify-center text-xs"><i class="fas fa-times-circle"></i></span>`;
                     }
                     userTabsContainer.appendChild(tab);
@@ -341,7 +343,6 @@
                 userTabsContainer.appendChild(addUserBtn);
             };
             const updateTitleAndForm = () => {
-                const isMyDiary = appState.activeView === appState.primaryUser;
                 const isFeed = appState.activeView === 'feed';
 
                 if (isFeed) {
@@ -351,18 +352,13 @@
                     entriesTitle.textContent = '모두의 기록들';
                     journalForm.style.display = 'none';
                     quoteContainer.style.display = 'none';
-                } else if (isMyDiary) {
+                } else {
                     mainHeader.style.display = 'block';
                     mainTitle.textContent = `${appState.activeView || ''}의 감사 일기장`;
                     mainSubtitle.textContent = '감사했던 일들을 기록하세요.';
-                    entriesTitle.textContent = '나의 기록들';
-                    journalForm.style.display = 'block';
-                    quoteContainer.style.display = 'block';
-                } else {
-                    mainHeader.style.display = 'none';
                     entriesTitle.textContent = `${appState.activeView || ''}님의 기록들`;
-                    journalForm.style.display = 'none';
-                    quoteContainer.style.display = 'none';
+                    quoteContainer.style.display = 'block';
+                    journalForm.style.display = 'block'; // [수정] 항상 글쓰기 폼 표시
                 }
             };
             const renderEntries = () => {
@@ -520,6 +516,13 @@
                 const tab = e.target.closest('.user-tab');
                 if (tab) {
                     const user = tab.dataset.user;
+                    const switchView = (targetUser) => {
+                        if (appState.activeView === targetUser) return;
+                        appState.activeView = targetUser; 
+                        localStorage.setItem('activeView', targetUser);
+                        renderUI();
+                    };
+
                     if (e.target.closest('.delete-user-btn')) {
                         const action = async () => {
                             loadingOverlay.style.display = 'flex';
@@ -534,15 +537,27 @@
                             const metadataRef = doc(db, "journalApp", "metadata");
                             const newUsers = { ...appState.users }; delete newUsers[user];
                             await updateDoc(metadataRef, { users: newUsers });
+                            
+                            if (appState.primaryUser === user) {
+                                const newPrimary = Object.keys(newUsers).length > 0 ? Object.keys(newUsers)[0] : null;
+                                localStorage.setItem('primaryUser', newPrimary);
+                                appState.primaryUser = newPrimary;
+                            }
+                            if (appState.activeView === user) {
+                                const newActive = appState.primaryUser || 'feed';
+                                localStorage.setItem('activeView', newActive);
+                                appState.activeView = newActive;
+                            }
                             loadingOverlay.style.display = 'none';
                         };
                         if (appState.users[user].password) showModal('password', { user: user, onPassword: action });
                         else showModal('confirmDelete', { message: `'${user}' 사용자의 모든 일기가 사라집니다.`, onConfirm: action });
                     } else {
-                        if (appState.activeView === user) return;
-                        appState.activeView = user; 
-                        localStorage.setItem('activeView', user);
-                        renderUI();
+                        if (user !== 'feed' && user !== appState.primaryUser && appState.users[user].password) {
+                            showModal('password', { user: user, onPassword: () => switchView(user) });
+                        } else {
+                            switchView(user);
+                        }
                     }
                 }
                 if (e.target.closest('#add-user-btn')) showModal('addUser');
@@ -553,16 +568,17 @@
                 const content = journalEntry.innerHTML;
                 if (!content.trim() || journalEntry.textContent.trim() === '' && !journalEntry.querySelector('img')) { alert('내용을 입력해주세요.'); return; }
                 loadingOverlay.style.display = 'flex';
-                const entriesRef = collection(db, "journalApp", appState.activeView, "entries");
+                // [수정] 글쓰기는 항상 primaryUser에게 저장
+                const entriesRef = collection(db, "journalApp", appState.primaryUser, "entries");
                 const newEntryData = { date: journalDate.value, content: content, createdAt: serverTimestamp(), likes: 0, likedBy: [] };
                 const docRef = await addDoc(entriesRef, newEntryData);
                 
                 const feedRef = doc(db, "feedEntries", docRef.id);
-                await setDoc(feedRef, { ...newEntryData, author: appState.activeView });
+                await setDoc(feedRef, { ...newEntryData, author: appState.primaryUser });
 
                 const metadataRef = doc(db, "journalApp", "metadata");
                 const updatedUsers = { ...appState.users };
-                Object.keys(updatedUsers).forEach(user => { if (user !== appState.activeView) updatedUsers[user].hasNew = true; });
+                Object.keys(updatedUsers).forEach(user => { if (user !== appState.primaryUser) updatedUsers[user].hasNew = true; });
                 await updateDoc(metadataRef, { users: updatedUsers });
                 journalEntry.innerHTML = ''; journalDate.valueAsDate = new Date();
                 loadingOverlay.style.display = 'none';
@@ -579,14 +595,14 @@
 
                 if (e.target.closest('.like-btn')) {
                     handleLikeClick(entryId, author);
-                } else if (e.target.closest('.delete-btn') && appState.activeView !== 'feed' && appState.activeView === appState.primaryUser) {
+                } else if (e.target.closest('.delete-btn')) {
                     performAction(async () => {
                         showModal('confirmDelete', { message: '이 일기를 삭제합니다.', onConfirm: async () => { 
                             await deleteDoc(doc(db, "journalApp", author, "entries", entryId));
                             await deleteDoc(doc(db, "feedEntries", entryId));
                         }});
                     });
-                } else if (e.target.closest('.edit-btn') && appState.activeView !== 'feed' && appState.activeView === appState.primaryUser) {
+                } else if (e.target.closest('.edit-btn')) {
                     performAction(() => {
                         showModal('edit', { content: entryData.content, onSave: async (newContent) => { 
                             const entryRef = doc(db, "journalApp", author, "entries", entryId);
