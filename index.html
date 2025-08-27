@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>모두의 감사 일기장</title>
+    <title>모두의 감사 일기장 (Firebase)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Icon Library -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -26,70 +26,90 @@
         }
         .delete-user-btn { opacity: 0; transition: opacity 0.2s ease-in-out; }
         .user-tab:hover .delete-user-btn { opacity: 1; }
-        /* 커스텀 파일 업로드 버튼 */
         input[type="file"] { display: none; }
         .custom-file-upload {
-            border: 1px solid #d1d5db;
-            display: inline-block;
-            padding: 6px 12px;
-            cursor: pointer;
-            background-color: #f9fafb;
-            border-radius: 0.5rem;
-            font-weight: 500;
-            color: #374151;
-            transition: background-color 0.2s;
+            border: 1px solid #d1d5db; display: inline-block; padding: 6px 12px;
+            cursor: pointer; background-color: #f9fafb; border-radius: 0.5rem;
+            font-weight: 500; color: #374151; transition: background-color 0.2s;
         }
         .custom-file-upload:hover { background-color: #f3f4f6; }
+        .new-badge {
+            position: absolute; top: 0; right: 0; transform: translate(40%, -40%);
+            background-color: #ef4444; color: white;
+            font-size: 0.6rem; font-weight: bold;
+            padding: 1px 4px; border-radius: 9999px;
+        }
+        .entry-item-clickable { cursor: pointer; }
+        .editable-div {
+            min-height: 10rem; border: 1px solid #d1d5db; border-radius: 0.5rem;
+            padding: 0.5rem 1rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: all 0.3s;
+        }
+        .editable-div:focus {
+            outline: none; --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+            --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+            box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+            border-color: #f59e0b; --tw-ring-color: rgb(245 158 11 / 0.5);
+        }
+        .editable-div:empty::before { content: "오늘 어떤 감사한 일이 있었나요?"; color: #9ca3af; cursor: text; }
+        .editable-div img, .entry-content img { max-width: 100%; border-radius: 0.5rem; margin: 0.5rem 0; }
+        
+        .resizable-wrapper { position: relative; display: inline-block; line-height: 0; }
+        .resizable-wrapper.active { outline: 2px solid #3b82f6; }
+        .resize-handle {
+            position: absolute; width: 12px; height: 12px;
+            background-color: #3b82f6; border: 2px solid white;
+            border-radius: 50%; z-index: 10;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .resize-handle.br { bottom: -6px; right: -6px; cursor: se-resize; }
+        /* 로딩 스피너 */
+        .loader {
+            border: 4px solid #f3f3f3; border-top: 4px solid #f59e0b;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+            position: absolute; top: 50%; left: 50%;
+            margin-left: -20px; margin-top: -20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="text-gray-800 flex items-center justify-center min-h-screen p-4">
 
-    <div class="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8">
+    <div id="app-container" class="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8 relative">
+        <div id="loading-overlay" class="absolute inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center rounded-2xl">
+            <div class="loader"></div>
+        </div>
         
-        <!-- 사용자 탭 -->
         <div class="mb-6">
-            <div id="user-tabs-container" class="flex items-center space-x-2 border-b-2 border-amber-100 pb-2 overflow-x-auto">
-                <!-- JS로 탭 생성 -->
-            </div>
+            <div id="user-tabs-container" class="flex items-center space-x-2 border-b-2 border-amber-100 pb-2 overflow-x-auto"></div>
         </div>
 
         <header class="mb-6 text-center">
-            <h1 id="main-title" class="text-4xl md:text-5xl font-bold text-amber-600 font-handwriting">래민의 감사 일기장</h1>
+            <h1 id="main-title" class="text-4xl md:text-5xl font-bold text-amber-600 font-handwriting"></h1>
             <p class="text-gray-500 mt-2">감사했던 일들을 기록하세요.</p>
         </header>
 
         <div id="quote-container" class="mb-8 text-center bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
-            <p id="gratitude-quote" class="text-gray-700 italic">"감사하는 마음은 최고의 미덕일 뿐만 아니라, 모든 미덕의 아버지이다."</p>
+            <p id="gratitude-quote" class="text-gray-700 italic"></p>
             <button id="new-quote-btn" class="text-xs text-amber-600 hover:text-amber-800 mt-2 font-semibold">다른 문구 보기</button>
         </div>
 
-        <!-- 일기 작성 폼 -->
         <form id="journal-form" class="mb-8 space-y-4">
             <div>
                 <label for="journal-date" class="block text-sm font-medium text-gray-700 mb-1">날짜</label>
-                <input type="date" id="journal-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500" required>
+                <input type="date" id="journal-date" class="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500" required>
             </div>
             <div>
                 <label for="journal-entry" class="block text-sm font-medium text-gray-700 mb-1">감사한 내용</label>
-                <textarea id="journal-entry" rows="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="오늘 어떤 감사한 일이 있었나요?" required></textarea>
+                <div id="journal-entry" contenteditable="true" class="editable-div"></div>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">사진 추가 (선택)</label>
-                <div class="flex items-center space-x-4">
-                    <label for="journal-photo" class="custom-file-upload">
-                        <i class="fa-solid fa-arrow-up-from-bracket mr-2"></i>파일 선택
-                    </label>
-                    <input type="file" id="journal-photo" accept="image/*">
-                    <img id="photo-preview" src="" alt="사진 미리보기" class="w-16 h-16 rounded-lg object-cover hidden">
-                    <button type="button" id="remove-photo-btn" class="text-red-500 hover:text-red-700 hidden">&times; 사진 삭제</button>
-                </div>
+                <label for="journal-photo" class="custom-file-upload"><i class="fa-solid fa-camera mr-2"></i>사진 추가하기</label>
+                <input type="file" id="journal-photo" accept="image/*">
             </div>
-            <button type="submit" class="w-full bg-amber-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-                기록하기
-            </button>
+            <button type="submit" class="w-full bg-amber-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">기록하기</button>
         </form>
 
-        <!-- 저장된 일기 목록 -->
         <div>
             <h2 class="text-3xl font-semibold text-gray-800 border-b-2 border-amber-200 pb-2 mb-4 font-handwriting">나의 기록들</h2>
             <div id="entries-list" class="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
@@ -98,339 +118,448 @@
         </div>
     </div>
 
-    <!-- 모달 컨테이너 -->
     <div id="modal-container"></div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // DOM 요소
-            const journalForm = document.getElementById('journal-form');
-            const journalDate = document.getElementById('journal-date');
-            const journalEntry = document.getElementById('journal-entry');
-            const journalPhoto = document.getElementById('journal-photo');
-            const photoPreview = document.getElementById('photo-preview');
-            const removePhotoBtn = document.getElementById('remove-photo-btn');
-            const entriesList = document.getElementById('entries-list');
-            const emptyMessage = document.getElementById('empty-message');
-            const quoteElement = document.getElementById('gratitude-quote');
-            const newQuoteBtn = document.getElementById('new-quote-btn');
-            const userTabsContainer = document.getElementById('user-tabs-container');
-            const mainTitle = document.getElementById('main-title');
-            const modalContainer = document.getElementById('modal-container');
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+        // --- 전역 변수 및 상수 ---
+        const journalForm = document.getElementById('journal-form');
+        const journalDate = document.getElementById('journal-date');
+        const journalEntry = document.getElementById('journal-entry');
+        const journalPhoto = document.getElementById('journal-photo');
+        const entriesList = document.getElementById('entries-list');
+        const emptyMessage = document.getElementById('empty-message');
+        const quoteElement = document.getElementById('gratitude-quote');
+        const newQuoteBtn = document.getElementById('new-quote-btn');
+        const userTabsContainer = document.getElementById('user-tabs-container');
+        const mainTitle = document.getElementById('main-title');
+        const modalContainer = document.getElementById('modal-container');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        
+        const gratitudeQuotes = ["감사하는 마음은 최고의 미덕일 뿐만 아니라, 모든 미덕의 아버지이다.", "세상에서 가장 즐거운 일은 감사하는 마음으로 사는 것이다.", "감사는 마음의 기억이다.", "작은 것에 감사할 때, 우리는 더 많은 것을 받을 준비가 된다.", "매일 아침 눈을 뜰 때마다 살아있음에 감사하라.", "감사할 줄 아는 사람에게는 부족함이 없다.", "행복은 감사의 문으로 들어온다."];
+
+        let db, auth, storage;
+        let appState = { users: {}, activeUser: null, entries: [] };
+        let metadataUnsubscribe = null;
+        let entriesUnsubscribe = null;
+        let savedRange = null;
+
+        // --- Firebase 초기화 및 인증 ---
+        async function initializeFirebase() {
+            // 이 변수들은 Canvas 환경에서 자동으로 제공됩니다.
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
             
-            let currentEditId = null;
+            if (!firebaseConfig.apiKey) {
+                loadingOverlay.innerHTML = "Firebase 설정이 필요합니다.";
+                return;
+            }
 
-            const gratitudeQuotes = [
-                "감사하는 마음은 최고의 미덕일 뿐만 아니라, 모든 미덕의 아버지이다.", "세상에서 가장 즐거운 일은 감사하는 마음으로 사는 것이다.", "감사는 마음의 기억이다.", "작은 것에 감사할 때, 우리는 더 많은 것을 받을 준비가 된다.", "매일 아침 눈을 뜰 때마다 살아있음에 감사하라.", "감사할 줄 아는 사람에게는 부족함이 없다.", "행복은 감사의 문으로 들어온다."
-            ];
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            storage = getStorage(app);
 
-            // --- 데이터 관리 ---
-            const getDb = () => JSON.parse(localStorage.getItem('multiUserGratitudeJournal')) || {
-                users: ['래민'], activeUser: '래민', entries: { '래민': [] }
-            };
-            const saveDb = (db) => localStorage.setItem('multiUserGratitudeJournal', JSON.stringify(db));
-
-            // --- 모달 관리 ---
-            const showModal = (type, data = {}) => {
-                modalContainer.innerHTML = ''; // 이전 모달 제거
-                let modalHtml = '';
-                switch (type) {
-                    case 'edit':
-                        modalHtml = `
-                            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                                <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-lg modal-fade-in">
-                                    <h2 class="text-2xl font-bold text-gray-800 mb-4">일기 수정하기</h2>
-                                    <textarea id="edit-entry-textarea" rows="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500">${data.content}</textarea>
-                                    <div class="mt-6 flex justify-end space-x-3">
-                                        <button class="modal-cancel-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">취소</button>
-                                        <button id="save-edit-btn" class="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600">저장하기</button>
-                                    </div>
-                                </div>
-                            </div>`;
-                        break;
-                    case 'addUser':
-                        modalHtml = `
-                            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                                <form id="add-user-form" class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-sm modal-fade-in">
-                                    <h2 class="text-2xl font-bold text-gray-800 mb-4">새 사용자 추가</h2>
-                                    <input type="text" id="new-user-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="이름을 입력하세요" required>
-                                    <div id="user-error-msg" class="text-red-500 text-sm mt-2 h-5"></div>
-                                    <div class="mt-2 flex justify-end space-x-3">
-                                        <button type="button" class="modal-cancel-btn px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">취소</button>
-                                        <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">추가하기</button>
-                                    </div>
-                                </form>
-                            </div>`;
-                        break;
-                    case 'confirmDelete':
-                         modalHtml = `
-                            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-                                <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-sm modal-fade-in text-center">
-                                    <h2 class="text-xl font-bold text-gray-800 mb-2">정말 삭제하시겠습니까?</h2>
-                                    <p class="text-gray-600 mb-6">${data.message}</p>
-                                    <div class="flex justify-center space-x-4">
-                                        <button class="modal-cancel-btn px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">취소</button>
-                                        <button id="confirm-delete-btn" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">삭제</button>
-                                    </div>
-                                </div>
-                            </div>`;
-                        break;
-                }
-                modalContainer.innerHTML = modalHtml;
-            };
-            const closeModal = () => { modalContainer.innerHTML = ''; };
-
-            // --- 렌더링 함수 ---
-            const renderApp = () => { renderTabs(); renderEntries(); updateTitle(); };
-            const renderTabs = () => {
-                const db = getDb();
-                userTabsContainer.innerHTML = '';
-                db.users.forEach(user => {
-                    const isActive = user === db.activeUser;
-                    const tab = document.createElement('button');
-                    tab.className = `user-tab relative flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors duration-200 ${isActive ? 'bg-amber-500 text-white' : 'text-gray-500 hover:bg-amber-100'}`;
-                    tab.textContent = user;
-                    tab.dataset.user = user;
-                    if (db.users.length > 1 && db.users[0] !== user) {
-                        tab.innerHTML += `<span class="delete-user-btn absolute -top-1 -right-1 text-red-500 bg-white rounded-full w-4 h-4 flex items-center justify-center text-xs"><i class="fas fa-times-circle"></i></span>`;
-                    }
-                    userTabsContainer.appendChild(tab);
-                });
-                const addUserBtn = document.createElement('button');
-                addUserBtn.id = 'add-user-btn';
-                addUserBtn.className = 'ml-2 px-3 py-1 bg-green-500 text-white rounded-full text-sm font-bold hover:bg-green-600 transition-transform hover:scale-110';
-                addUserBtn.innerHTML = '<i class="fas fa-plus"></i>';
-                userTabsContainer.appendChild(addUserBtn);
-            };
-            const updateTitle = () => { mainTitle.textContent = `${getDb().activeUser}의 감사 일기장`; };
-            const renderEntries = () => {
-                const db = getDb();
-                const userEntries = db.entries[db.activeUser] || [];
-                entriesList.innerHTML = '';
-                if (userEntries.length === 0) {
-                    entriesList.appendChild(emptyMessage);
-                    emptyMessage.style.display = 'block';
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    console.log("인증 성공:", user.uid);
+                    await setupListeners();
                 } else {
-                    emptyMessage.style.display = 'none';
-                    userEntries.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    userEntries.forEach(entry => {
-                        const entryElement = document.createElement('div');
-                        entryElement.className = 'bg-amber-50 p-4 rounded-xl border border-amber-200';
-                        entryElement.dataset.id = entry.id;
-                        const date = new Date(entry.date);
-                        const timeZoneOffset = date.getTimezoneOffset() * 60000;
-                        const adjustedDate = new Date(date.getTime() + timeZoneOffset);
-                        const formattedDate = adjustedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-                        
-                        let imageHtml = '';
-                        if (entry.image) {
-                            imageHtml = `<img src="${entry.image}" alt="감사일기 사진" class="mt-3 rounded-lg max-h-60 w-full object-cover">`;
+                    console.log("인증 정보 없음, 익명 로그인 시도...");
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined') {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
                         }
-
-                        entryElement.innerHTML = `
-                            <div class="flex justify-between items-start mb-2">
-                                <p class="font-semibold text-amber-800">${formattedDate}</p>
-                                <div class="flex space-x-2">
-                                    <button class="edit-btn text-gray-400 hover:text-green-600 text-xs font-bold py-1 px-2 rounded">수정</button>
-                                    <button class="delete-btn text-gray-400 hover:text-red-500 text-xs font-bold py-1 px-2 rounded">삭제</button>
-                                </div>
-                            </div>
-                            <p class="text-gray-700 whitespace-pre-wrap">${entry.content}</p>
-                            ${imageHtml}`;
-                        entriesList.appendChild(entryElement);
-                    });
-                }
-            };
-
-            // --- 이벤트 리스너 ---
-            // 탭 관리
-            userTabsContainer.addEventListener('click', (e) => {
-                const db = getDb();
-                const tab = e.target.closest('.user-tab');
-                if (tab) {
-                    if (e.target.closest('.delete-user-btn')) {
-                        const userToDelete = tab.dataset.user;
-                        showModal('confirmDelete', {
-                            message: `'${userToDelete}' 사용자의 모든 일기가 사라집니다.`,
-                            onConfirm: () => {
-                                db.users = db.users.filter(u => u !== userToDelete);
-                                delete db.entries[userToDelete];
-                                if (db.activeUser === userToDelete) {
-                                    db.activeUser = db.users[0];
-                                }
-                                saveDb(db);
-                                renderApp();
-                                closeModal();
-                            }
-                        });
-                    } else {
-                        db.activeUser = tab.dataset.user;
-                        saveDb(db);
-                        renderApp();
-                    }
-                }
-                if (e.target.closest('#add-user-btn')) {
-                    showModal('addUser');
-                }
-            });
-
-            // 모달 내부 이벤트
-            modalContainer.addEventListener('click', (e) => {
-                if (e.target.classList.contains('modal-cancel-btn')) closeModal();
-            });
-            modalContainer.addEventListener('submit', (e) => {
-                if (e.target.id === 'add-user-form') {
-                    e.preventDefault();
-                    const newUserNameInput = document.getElementById('new-user-name');
-                    const errorMsg = document.getElementById('user-error-msg');
-                    const newUser = newUserNameInput.value.trim();
-                    const db = getDb();
-                    if (newUser && !db.users.includes(newUser)) {
-                        db.users.push(newUser);
-                        db.entries[newUser] = [];
-                        db.activeUser = newUser;
-                        saveDb(db);
-                        renderApp();
-                        closeModal();
-                    } else if (db.users.includes(newUser)) {
-                        errorMsg.textContent = '이미 존재하는 이름입니다.';
-                    } else {
-                        errorMsg.textContent = '이름을 입력해주세요.';
+                    } catch (error) {
+                        console.error("익명 로그인 실패:", error);
+                        loadingOverlay.innerHTML = "인증에 실패했습니다.";
                     }
                 }
             });
+        }
 
-            // 사진 업로드 미리보기
-            journalPhoto.addEventListener('change', () => {
-                const file = journalPhoto.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        photoPreview.src = e.target.result;
-                        photoPreview.classList.remove('hidden');
-                        removePhotoBtn.classList.remove('hidden');
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-            removePhotoBtn.addEventListener('click', () => {
-                journalPhoto.value = ''; // 파일 선택 초기화
-                photoPreview.src = '';
-                photoPreview.classList.add('hidden');
-                removePhotoBtn.classList.add('hidden');
-            });
+        // --- 데이터 리스너 설정 ---
+        async function setupListeners() {
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const metadataRef = doc(db, `artifacts/${appId}/public/data/journal`);
 
-            // 파일 읽기 Promise 함수
-            const readFileAsDataURL = (file) => {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-            };
-
-            // 폼 제출
-            journalForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                let imageData = null;
-                if (journalPhoto.files[0]) {
-                    imageData = await readFileAsDataURL(journalPhoto.files[0]);
-                }
-                const db = getDb();
-                const newEntry = { id: Date.now(), date: journalDate.value, content: journalEntry.value, image: imageData };
-                if (!db.entries[db.activeUser]) {
-                    db.entries[db.activeUser] = [];
-                }
-                db.entries[db.activeUser].push(newEntry);
-                saveDb(db);
-                renderEntries();
-                journalForm.reset();
-                photoPreview.classList.add('hidden');
-                removePhotoBtn.classList.add('hidden');
-                journalDate.valueAsDate = new Date();
-            });
-
-            // 목록 클릭 (수정/삭제)
-            entriesList.addEventListener('click', (e) => {
-                const entryElement = e.target.closest('div[data-id]');
-                if (!entryElement) return;
-                const entryId = Number(entryElement.dataset.id);
-                const db = getDb();
-                let userEntries = db.entries[db.activeUser];
-
-                if (e.target.classList.contains('delete-btn')) {
-                    showModal('confirmDelete', {
-                        message: '이 일기를 삭제합니다.',
-                        onConfirm: () => {
-                            db.entries[db.activeUser] = userEntries.filter(entry => entry.id !== entryId);
-                            saveDb(db);
-                            renderEntries();
-                            closeModal();
-                        }
-                    });
+            // 메타데이터(사용자 목록 등) 실시간 감시
+            metadataUnsubscribe = onSnapshot(metadataRef, async (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    appState.users = data.users;
+                    // 로컬에 저장된 activeUser가 유효한지 확인, 아니면 첫 사용자로 설정
+                    const lastActiveUser = localStorage.getItem('activeUser');
+                    if (lastActiveUser && appState.users[lastActiveUser]) {
+                        appState.activeUser = lastActiveUser;
+                    } else {
+                        appState.activeUser = Object.keys(appState.users)[0];
+                    }
+                } else {
+                    // 첫 실행 시 기본 데이터 생성
+                    const defaultUser = '래민';
+                    appState.users = { [defaultUser]: { password: null, hasNew: false } };
+                    appState.activeUser = defaultUser;
+                    await setDoc(metadataRef, { users: appState.users });
                 }
                 
-                if (e.target.classList.contains('edit-btn')) {
-                    const entryToEdit = userEntries.find(entry => entry.id === entryId);
-                    if (entryToEdit) {
-                        currentEditId = entryId;
-                        showModal('edit', { content: entryToEdit.content });
-                        // 수정 저장 버튼에 이벤트 리스너 추가
-                        document.getElementById('save-edit-btn').addEventListener('click', () => {
-                            const newContent = document.getElementById('edit-entry-textarea').value;
-                            const entryIndex = db.entries[db.activeUser].findIndex(entry => entry.id === currentEditId);
-                            if (entryIndex > -1) {
-                                db.entries[db.activeUser][entryIndex].content = newContent;
-                                saveDb(db);
-                                renderEntries();
-                            }
-                            closeModal();
-                        });
-                    }
+                // 사용자 탭에 'New' 마크 제거
+                if (appState.users[appState.activeUser]) {
+                    appState.users[appState.activeUser].hasNew = false;
+                    await updateDoc(metadataRef, { users: appState.users });
                 }
+                
+                renderTabs();
+                updateTitle();
+                setupEntriesListener(); // 활성 사용자가 정해지면 일기 리스너 설정
+            }, (error) => {
+                console.error("메타데이터 감시 실패:", error);
+                loadingOverlay.innerHTML = "데이터를 불러오는 데 실패했습니다.";
             });
+        }
 
-            // 삭제 확인 모달의 삭제 버튼
-            modalContainer.addEventListener('click', (e) => {
-                if (e.target.id === 'confirm-delete-btn' && e.target.closest('.modal-fade-in').querySelector('h2').textContent.includes('삭제')) {
-                    // onConfirm is attached dynamically, so we can't define it here.
-                    // Instead, we find the modal and its data. This is tricky.
-                    // A better approach is to attach the handler when creating the modal.
-                    // Let's find a way to pass the handler.
-                    // The current showModal doesn't store the handler. I'll modify it.
-                    // For now, this is a limitation. I'll rewrite the modal logic to handle this.
-                    // Let's re-architect the modal confirmation.
-                }
-            });
-            // Re-architected modal handler
-            modalContainer.addEventListener('click', e => {
-                if (window.confirmAction) {
-                    if (e.target.id === 'confirm-delete-btn') {
-                        window.confirmAction();
-                        delete window.confirmAction;
-                    } else if (e.target.classList.contains('modal-cancel-btn')) {
-                        delete window.confirmAction;
-                    }
-                }
-            });
-            const originalShowModal = showModal;
-            showModal = (type, data) => {
-                if (data && data.onConfirm) {
-                    window.confirmAction = data.onConfirm;
-                }
-                originalShowModal(type, data);
-            };
-            
-            // 기타
-            const displayRandomQuote = () => { quoteElement.textContent = `"${gratitudeQuotes[Math.floor(Math.random() * gratitudeQuotes.length)]}"`; };
-            newQuoteBtn.addEventListener('click', displayRandomQuote);
+        // 활성 사용자의 일기 목록 실시간 감시
+        function setupEntriesListener() {
+            if (entriesUnsubscribe) entriesUnsubscribe(); // 이전 리스너 해제
 
-            // 초기화
-            journalDate.valueAsDate = new Date();
-            displayRandomQuote();
-            renderApp();
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const entriesRef = collection(db, `artifacts/${appId}/public/data/journal/users/${appState.activeUser}/entries`);
+            const q = query(entriesRef);
+
+            entriesUnsubscribe = onSnapshot(q, (querySnapshot) => {
+                appState.entries = [];
+                querySnapshot.forEach((doc) => {
+                    appState.entries.push({ id: doc.id, ...doc.data() });
+                });
+                renderEntries();
+                loadingOverlay.style.display = 'none'; // 데이터 로드 완료 후 로딩 숨김
+            }, (error) => {
+                console.error("일기 감시 실패:", error);
+            });
+        }
+
+        // --- 모달 관리 (이전과 동일) ---
+        const showModal = (type, data = {}) => {
+            modalContainer.innerHTML = ''; 
+            let modalHtml = '';
+            switch (type) {
+                case 'edit':
+                    modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"><div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-lg modal-fade-in"><h2 class="text-2xl font-bold mb-4">일기 수정하기</h2><div id="edit-entry-div" contenteditable="true" class="editable-div">${data.content}</div><div class="mt-6 flex justify-end space-x-3"><button class="modal-cancel-btn px-4 py-2 bg-gray-200 rounded-lg">취소</button><button id="save-edit-btn" class="px-4 py-2 bg-amber-500 text-white rounded-lg">저장하기</button></div></div></div>`;
+                    break;
+                case 'addUser':
+                    modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"><form id="add-user-form" class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-sm modal-fade-in space-y-4"><h2 class="text-2xl font-bold">새 사용자 추가</h2><div><label>이름</label><input type="text" id="new-user-name" class="w-full px-4 py-2 border rounded-lg" required></div><div><label>비밀번호 (선택)</label><input type="password" id="new-user-password" class="w-full px-4 py-2 border rounded-lg"></div><div id="user-error-msg" class="text-red-500 text-sm h-5"></div><div class="mt-2 flex justify-end space-x-3"><button type="button" class="modal-cancel-btn px-4 py-2 bg-gray-200 rounded-lg">취소</button><button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-lg">추가하기</button></div></form></div>`;
+                    break;
+                case 'confirmDelete':
+                    modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"><div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-sm modal-fade-in text-center"><h2 class="text-xl font-bold mb-2">정말 삭제하시겠습니까?</h2><p class="text-gray-600 mb-6">${data.message}</p><div class="flex justify-center space-x-4"><button class="modal-cancel-btn px-6 py-2 bg-gray-200 rounded-lg">취소</button><button id="confirm-delete-btn" class="px-6 py-2 bg-red-500 text-white rounded-lg">삭제</button></div></div></div>`;
+                    break;
+                case 'password':
+                    modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"><form id="password-form" class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-sm modal-fade-in"><h2 class="text-2xl font-bold mb-4">비밀번호 확인</h2><input type="password" id="password-input" class="w-full px-4 py-2 border rounded-lg" required><div id="password-error-msg" class="text-red-500 text-sm mt-2 h-5"></div><div class="mt-2 flex justify-end space-x-3"><button type="button" class="modal-cancel-btn px-4 py-2 bg-gray-200 rounded-lg">취소</button><button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg">확인</button></div></form></div>`;
+                    break;
+                case 'viewEntry':
+                    modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="view-modal-backdrop"><div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-2xl modal-fade-in"><div class="flex justify-between items-center"><h2 class="text-2xl font-bold">${data.date}</h2><button class="modal-cancel-btn text-2xl">&times;</button></div><div class="entry-content whitespace-pre-wrap mt-4 max-h-[70vh] overflow-y-auto">${data.content}</div></div></div>`;
+                    break;
+            }
+            modalContainer.innerHTML = modalHtml;
+
+            const closeModal = () => { modalContainer.innerHTML = ''; };
+            modalContainer.querySelectorAll('.modal-cancel-btn, #view-modal-backdrop').forEach(btn => btn.addEventListener('click', (e) => { if(e.target === e.currentTarget) closeModal(); }));
+
+            if (data.onConfirm) modalContainer.querySelector('#confirm-delete-btn')?.addEventListener('click', () => { data.onConfirm(); closeModal(); });
+            if (data.onSave) modalContainer.querySelector('#save-edit-btn')?.addEventListener('click', () => { data.onSave(modalContainer.querySelector('#edit-entry-div').innerHTML); closeModal(); });
+            if (data.onPassword) {
+                const form = modalContainer.querySelector('#password-form');
+                form?.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const password = form.querySelector('#password-input').value;
+                    if (appState.users[appState.activeUser].password === password) {
+                        data.onPassword();
+                        closeModal();
+                    } else {
+                        form.querySelector('#password-error-msg').textContent = '비밀번호가 틀렸습니다.';
+                    }
+                });
+            }
+            if (type === 'addUser') {
+                modalContainer.querySelector('#add-user-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const newUser = modalContainer.querySelector('#new-user-name').value.trim();
+                    const password = modalContainer.querySelector('#new-user-password').value;
+                    const errorMsg = modalContainer.querySelector('#user-error-msg');
+                    
+                    if (newUser && !appState.users[newUser]) {
+                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                        const metadataRef = doc(db, `artifacts/${appId}/public/data/journal`);
+                        const newUsers = { ...appState.users, [newUser]: { password: password || null, hasNew: false } };
+                        await updateDoc(metadataRef, { users: newUsers });
+                        // 새 사용자로 즉시 전환
+                        appState.activeUser = newUser;
+                        localStorage.setItem('activeUser', newUser);
+                        closeModal();
+                    } else {
+                        errorMsg.textContent = appState.users[newUser] ? '이미 존재하는 이름입니다.' : '이름을 입력해주세요.';
+                    }
+                });
+            }
+        };
+
+        // --- 렌더링 함수 ---
+        const renderTabs = () => {
+            userTabsContainer.innerHTML = '';
+            Object.keys(appState.users).forEach(user => {
+                const isActive = user === appState.activeUser;
+                const tab = document.createElement('button');
+                tab.className = `user-tab relative flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors duration-200 ${isActive ? 'bg-amber-500 text-white' : 'text-gray-500 hover:bg-amber-100'}`;
+                tab.textContent = user;
+                tab.dataset.user = user;
+                if (appState.users[user].hasNew) tab.innerHTML += `<span class="new-badge">New</span>`;
+                if (Object.keys(appState.users).length > 1 && Object.keys(appState.users)[0] !== user) {
+                    tab.innerHTML += `<span class="delete-user-btn absolute -top-1 -right-1 text-red-500 bg-white rounded-full w-4 h-4 flex items-center justify-center text-xs"><i class="fas fa-times-circle"></i></span>`;
+                }
+                userTabsContainer.appendChild(tab);
+            });
+            const addUserBtn = document.createElement('button');
+            addUserBtn.id = 'add-user-btn';
+            addUserBtn.className = 'ml-2 px-3 py-1 bg-green-500 text-white rounded-full text-sm font-bold hover:bg-green-600 transition-transform hover:scale-110';
+            addUserBtn.innerHTML = '<i class="fas fa-plus"></i>';
+            userTabsContainer.appendChild(addUserBtn);
+        };
+        const updateTitle = () => { mainTitle.textContent = `${appState.activeUser || ''}의 감사 일기장`; };
+        const renderEntries = () => {
+            entriesList.innerHTML = '';
+            if (appState.entries.length === 0) {
+                entriesList.appendChild(emptyMessage);
+                emptyMessage.style.display = 'block';
+            } else {
+                emptyMessage.style.display = 'none';
+                appState.entries.sort((a, b) => new Date(b.date) - new Date(a.date));
+                appState.entries.forEach(entry => {
+                    const entryElement = document.createElement('div');
+                    entryElement.className = 'entry-item-clickable bg-amber-50 p-4 rounded-xl border border-amber-200 transition-shadow hover:shadow-md';
+                    entryElement.dataset.id = entry.id;
+                    const date = new Date(entry.date);
+                    const adjustedDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
+                    const formattedDate = adjustedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = entry.content;
+                    const textPreview = tempDiv.textContent || tempDiv.innerText || "";
+                    entryElement.innerHTML = `<div class="flex justify-between items-start mb-2"><p class="font-semibold text-amber-800">${formattedDate}</p><div class="flex space-x-2"><button class="edit-btn text-gray-400 hover:text-green-600 text-xs font-bold py-1 px-2 rounded">수정</button><button class="delete-btn text-gray-400 hover:text-red-500 text-xs font-bold py-1 px-2 rounded">삭제</button></div></div><p class="text-gray-700 whitespace-pre-wrap truncate">${textPreview}</p>`;
+                    entriesList.appendChild(entryElement);
+                });
+            }
+        };
+
+        // --- 이미지 리사이즈 로직 (이전과 동일) ---
+        const makeImageResizable = (img) => {
+            document.querySelectorAll('.resizable-wrapper').forEach(wrapper => {
+                wrapper.parentNode.insertBefore(wrapper.firstChild, wrapper);
+                wrapper.parentNode.removeChild(wrapper);
+            });
+            const wrapper = document.createElement('span');
+            wrapper.className = 'resizable-wrapper active';
+            wrapper.contentEditable = false;
+            img.parentNode.insertBefore(wrapper, img);
+            wrapper.appendChild(img);
+            const handle = document.createElement('span');
+            handle.className = 'resize-handle br';
+            wrapper.appendChild(handle);
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                const startX = e.clientX;
+                const startWidth = img.offsetWidth;
+                const doDrag = (e) => {
+                    const newWidth = startWidth + (e.clientX - startX);
+                    if (newWidth > 50) img.style.width = newWidth + 'px';
+                };
+                const stopDrag = () => {
+                    document.documentElement.removeEventListener('mousemove', doDrag, false);
+                    document.documentElement.removeEventListener('mouseup', stopDrag, false);
+                };
+                document.documentElement.addEventListener('mousemove', doDrag, false);
+                document.documentElement.addEventListener('mouseup', stopDrag, false);
+            });
+        };
+
+        // --- 이벤트 리스너 ---
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            if (target.tagName === 'IMG' && target.closest('.editable-div')) {
+                makeImageResizable(target);
+            } else if (!target.closest('.resizable-wrapper')) {
+                document.querySelectorAll('.resizable-wrapper').forEach(wrapper => {
+                    wrapper.parentNode.insertBefore(wrapper.firstChild, wrapper);
+                    wrapper.parentNode.removeChild(wrapper);
+                });
+            }
         });
+
+        journalEntry.addEventListener('blur', () => {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) savedRange = selection.getRangeAt(0);
+        });
+
+        journalPhoto.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const userId = auth.currentUser.uid;
+            const filePath = `artifacts/${appId}/${userId}/${Date.now()}-${file.name}`;
+            const storageRef = ref(storage, filePath);
+
+            try {
+                loadingOverlay.style.display = 'flex';
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+
+                const img = document.createElement('img');
+                img.src = url;
+                
+                journalEntry.focus();
+                const selection = window.getSelection();
+                if (savedRange) {
+                    selection.removeAllRanges();
+                    selection.addRange(savedRange);
+                }
+                if (selection.getRangeAt && selection.rangeCount) {
+                    let range = selection.getRangeAt(0);
+                    range.deleteContents();
+                    range.insertNode(img);
+                    const space = document.createTextNode("\u00A0");
+                    range.insertNode(space);
+                    range.setStartAfter(space);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            } catch (error) {
+                console.error("사진 업로드 실패:", error);
+                alert("사진 업로드에 실패했습니다.");
+            } finally {
+                journalPhoto.value = '';
+                loadingOverlay.style.display = 'none';
+            }
+        });
+
+        userTabsContainer.addEventListener('click', async (e) => {
+            const tab = e.target.closest('.user-tab');
+            if (tab) {
+                const user = tab.dataset.user;
+                if (e.target.closest('.delete-user-btn')) {
+                    const action = async () => {
+                        loadingOverlay.style.display = 'flex';
+                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                        // 1. 사용자 일기 전체 삭제
+                        const entriesRef = collection(db, `artifacts/${appId}/public/data/journal/users/${user}/entries`);
+                        const querySnapshot = await getDocs(entriesRef);
+                        const batch = writeBatch(db);
+                        querySnapshot.forEach((doc) => batch.delete(doc.ref));
+                        await batch.commit();
+                        
+                        // 2. 메타데이터에서 사용자 삭제
+                        const metadataRef = doc(db, `artifacts/${appId}/public/data/journal`);
+                        const newUsers = { ...appState.users };
+                        delete newUsers[user];
+                        await updateDoc(metadataRef, { users: newUsers });
+                        loadingOverlay.style.display = 'none';
+                    };
+                    if (appState.users[user].password) showModal('password', { onPassword: action });
+                    else showModal('confirmDelete', { message: `'${user}' 사용자의 모든 일기가 사라집니다.`, onConfirm: action });
+                } else {
+                    appState.activeUser = user;
+                    localStorage.setItem('activeUser', user);
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                    const metadataRef = doc(db, `artifacts/${appId}/public/data/journal`);
+                    const updatedUsers = { ...appState.users };
+                    if(updatedUsers[user]) updatedUsers[user].hasNew = false;
+                    await updateDoc(metadataRef, { users: updatedUsers });
+                }
+            }
+            if (e.target.closest('#add-user-btn')) showModal('addUser');
+        });
+
+        journalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const content = journalEntry.innerHTML;
+            if (!content.trim() || journalEntry.textContent.trim() === '' && !journalEntry.querySelector('img')) {
+                alert('내용을 입력해주세요.');
+                return;
+            }
+            
+            loadingOverlay.style.display = 'flex';
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const entriesRef = collection(db, `artifacts/${appId}/public/data/journal/users/${appState.activeUser}/entries`);
+            await addDoc(entriesRef, {
+                date: journalDate.value,
+                content: content,
+                createdAt: new Date()
+            });
+
+            // 다른 사용자에게 'New' 알림
+            const metadataRef = doc(db, `artifacts/${appId}/public/data/journal`);
+            const updatedUsers = { ...appState.users };
+            Object.keys(updatedUsers).forEach(user => { if (user !== appState.activeUser) updatedUsers[user].hasNew = true; });
+            await updateDoc(metadataRef, { users: updatedUsers });
+
+            journalEntry.innerHTML = '';
+            journalDate.valueAsDate = new Date();
+            loadingOverlay.style.display = 'none';
+        });
+
+        entriesList.addEventListener('click', (e) => {
+            const entryElement = e.target.closest('div[data-id]');
+            if (!entryElement) return;
+            const entryId = entryElement.dataset.id;
+            const entryData = appState.entries.find(entry => entry.id === entryId);
+
+            const performAction = (action) => {
+                if (appState.users[appState.activeUser].password) showModal('password', { onPassword: action });
+                else action();
+            };
+
+            if (e.target.classList.contains('delete-btn')) {
+                performAction(() => {
+                    showModal('confirmDelete', {
+                        message: '이 일기를 삭제합니다.',
+                        onConfirm: async () => {
+                            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                            const entryRef = doc(db, `artifacts/${appId}/public/data/journal/users/${appState.activeUser}/entries`, entryId);
+                            await deleteDoc(entryRef);
+                        }
+                    });
+                });
+            } else if (e.target.classList.contains('edit-btn')) {
+                performAction(() => {
+                    showModal('edit', {
+                        content: entryData.content,
+                        onSave: async (newContent) => {
+                            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                            const entryRef = doc(db, `artifacts/${appId}/public/data/journal/users/${appState.activeUser}/entries`, entryId);
+                            await updateDoc(entryRef, { content: newContent });
+                        }
+                    });
+                });
+            } else if (entryData) {
+                const date = new Date(entryData.date);
+                const adjustedDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
+                const formattedDate = adjustedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+                showModal('viewEntry', { ...entryData, date: formattedDate });
+            }
+        });
+
+        const displayRandomQuote = () => { quoteElement.textContent = `"${gratitudeQuotes[Math.floor(Math.random() * gratitudeQuotes.length)]}"`; };
+        newQuoteBtn.addEventListener('click', displayRandomQuote);
+
+        // --- 앱 시작 ---
+        journalDate.valueAsDate = new Date();
+        displayRandomQuote();
+        initializeFirebase();
     </script>
 </body>
 </html>
