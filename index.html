@@ -39,7 +39,7 @@
             font-size: 0.6rem; font-weight: bold;
             padding: 1px 4px; border-radius: 9999px;
         }
-        .entry-item-clickable { cursor: pointer; }
+        .entry-content-clickable { cursor: pointer; }
         .editable-div {
             min-height: 10rem; border: 1px solid #d1d5db; border-radius: 0.5rem;
             padding: 0.5rem 1rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: all 0.3s;
@@ -70,6 +70,7 @@
             margin-left: -20px; margin-top: -20px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .heart-btn .fa-heart { transition: color 0.3s ease, transform 0.3s ease; }
         .heart-btn.liked .fa-heart { color: #ef4444; animation: heartBeat 0.5s ease; }
         @keyframes heartBeat {
             0% { transform: scale(1); }
@@ -89,7 +90,7 @@
             <div id="user-tabs-container" class="flex items-center space-x-2 border-b-2 border-amber-100 pb-2 overflow-x-auto"></div>
         </div>
 
-        <header class="mb-6 text-center">
+        <header id="main-header" class="mb-6 text-center">
             <h1 id="main-title" class="text-4xl md:text-5xl font-bold text-amber-600 font-handwriting"></h1>
             <p id="main-subtitle" class="text-gray-500 mt-2">감사했던 일들을 기록하세요.</p>
         </header>
@@ -117,7 +118,7 @@
 
         <div>
             <h2 id="entries-title" class="text-3xl font-semibold text-gray-800 border-b-2 border-amber-200 pb-2 mb-4 font-handwriting">나의 기록들</h2>
-            <div id="entries-list" class="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
+            <div id="entries-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
                 <p id="empty-message" class="text-center text-gray-500 py-4">아직 작성된 일기가 없어요.</p>
             </div>
         </div>
@@ -136,13 +137,12 @@
         const gratitudeQuotes = [ "감사하는 마음은 최고의 미덕일 뿐만 아니라, 모든 미덕의 아버지이다.", "세상에서 가장 즐거운 일은 감사하는 마음으로 사는 것이다.", "감사는 마음의 기억이다.", "작은 것에 감사할 때, 우리는 더 많은 것을 받을 준비가 된다.", "매일 아침 눈을 뜰 때마다 살아있음에 감사하라.", "감사할 줄 아는 사람에게는 부족함이 없다.", "행복은 감사의 문으로 들어온다.", "감사는 평범한 날을 추수감사절로 바꾼다.", "숨 쉴 수 있음에 감사하고, 살아 있음에 감사하라.", "감사하는 마음은 영혼을 위한 최고의 휴식이다.", "세상에서 가장 아름다운 기도는 '감사합니다'이다.", "햇살 한 줌, 바람 한 점에도 감사할 이유가 있다.", "당연하게 여겼던 모든 것들이 사실은 기적이었다.", "감사는 행복으로 가는 가장 빠른 길이다.", "오늘 내가 받은 모든 것에 감사한다.", "작은 기쁨들이 모여 큰 행복을 만든다.", "매일이 선물이라는 것을 기억하라.", "감사할수록 감사할 일이 더 많이 생긴다.", "감사는 과거를 이해하게 하고, 현재에 평화를 가져오며, 미래에 대한 비전을 창조한다.", "가장 큰 축복은 보이지 않는 곳에 있다.", "오늘 하루도 무사히 보냈음에 감사한다.", "건강한 몸과 마음을 주셔서 감사합니다.", "맛있는 음식을 먹을 수 있음에 감사합니다.", "따뜻한 집이 있다는 것에 감사합니다.", "나를 사랑해주는 사람들이 곁에 있어 감사합니다.", "배울 수 있는 기회가 있음에 감사합니다.", "아침에 눈을 뜰 수 있다는 사실에 감사합니다.", "실수로부터 배울 수 있음에 감사합니다.", "아름다운 음악을 들을 수 있음에 감사합니다.", "맑은 공기를 마실 수 있음에 감사합니다.", "오늘의 날씨에 감사합니다.", "나 자신으로 살아갈 수 있음에 감사합니다.", "웃을 수 있는 순간들에 감사합니다.", "힘들 때 기댈 수 있는 친구가 있어 감사합니다.", "새로운 하루를 시작할 힘을 주셔서 감사합니다.", "좋은 책을 읽을 수 있는 시간에 감사합니다.", "나를 성장시키는 모든 경험에 감사합니다.", "평화로운 순간들에 감사합니다.", "따뜻한 차 한잔의 여유에 감사합니다.", "나의 꿈을 응원해주는 사람들이 있어 감사합니다.", "오늘 하루 동안 만난 모든 인연에 감사합니다.", "깨끗한 물을 마실 수 있음에 감사합니다.", "편안한 잠자리에 감사합니다.", "자연의 아름다움을 느낄 수 있음에 감사합니다.", "나의 노력을 알아주는 사람이 있음에 감사합니다.", "용서할 수 있는 마음에 감사합니다.", "사랑을 주고받을 수 있음에 감사합니다.", "오늘 흘린 땀방울에 감사합니다.", "나를 믿어주는 마음에 감사합니다.", "작은 친절을 베풀 수 있는 기회에 감사합니다.", "넘어져도 다시 일어설 수 있는 용기에 감사합니다.", "함께 웃고 떠들 수 있는 동료가 있어 감사합니다.", "오늘 하루도 수고한 나 자신에게 감사합니다.", "새로운 것을 배울 수 있는 호기심에 감사합니다.", "어려움을 극복할 수 있는 지혜에 감사합니다.", "나를 필요로 하는 곳이 있음에 감사합니다.", "따뜻한 햇살 아래 산책할 수 있음에 감사합니다.", "가족들의 건강에 감사합니다.", "오늘의 소소한 행복에 감사합니다.", "나를 웃게 만드는 모든 것에 감사합니다.", "고요한 아침 시간에 감사합니다.", "편안하게 쉴 수 있는 주말에 감사합니다.", "목표를 향해 나아갈 수 있음에 감사합니다.", "나의 감정을 솔직하게 표현할 수 있음에 감사합니다.", "도움이 필요할 때 손 내밀어주는 사람들에게 감사합니다.", "아름다운 노을을 볼 수 있음에 감사합니다.", "포기하지 않는 나의 끈기에 감사합니다.", "좋은 영화 한 편 볼 수 있는 여유에 감사합니다.", "나의 부족함을 채워주는 사람들에게 감사합니다.", "오늘 하루도 최선을 다한 나에게 감사합니다.", "편안한 신발을 신고 걸을 수 있음에 감사합니다.", "밤하늘의 별을 볼 수 있음에 감사합니다.", "시원한 바람을 느낄 수 있음에 감사합니다.", "나를 응원하는 댓글 하나에 감사합니다.", "어제의 나보다 성장한 오늘의 나에게 감사합니다.", "창밖에 내리는 빗소리에 감사합니다.", "나의 이야기를 들어주는 사람이 있음에 감사합니다.", "건강하게 일할 수 있는 직장이 있음에 감사합니다.", "새로운 아이디어가 떠오른 순간에 감사합니다.", "나를 둘러싼 모든 것들의 조화에 감사합니다.", "어려운 문제를 해결했을 때의 성취감에 감사합니다.", "나를 있는 그대로 받아들여 주는 사람들에게 감사합니다.", "오늘도 무언가를 해냈다는 사실에 감사합니다.", "달콤한 간식을 먹을 수 있는 즐거움에 감사합니다.", "좋은 향기를 맡을 수 있음에 감사합니다.", "나의 작은 노력이 누군가에게 도움이 되었을 때 감사합니다.", "세상의 모든 지식에 접근할 수 있음에 감사합니다.", "힘든 하루 끝에 마시는 시원한 물 한 잔에 감사합니다.", "나의 선택을 존중해주는 사람들에게 감사합니다.", "오늘 하루 동안 느낀 모든 감정에 감사합니다.", "아무것도 하지 않고 쉴 수 있는 시간에 감사합니다.", "나의 재능을 나눌 수 있음에 감사합니다.", "세상은 여전히 아름답다는 것을 느낄 때 감사합니다.", "실패는 성공의 어머니임을 알게 해주셔서 감사합니다.", "오늘 하루도 살아있음에 감사합니다." ];
 
         let db, auth, storage;
-        let appState = { users: {}, activeView: null, entries: [] };
+        let appState = { users: {}, activeView: null, primaryUser: null, entries: [] };
         let metadataUnsubscribe = null;
         let entriesUnsubscribe = null;
         let commentsUnsubscribe = null;
         let savedRange = null;
 
-        // [수정] DOM 요소 변수를 DOMContentLoaded 내에서 초기화
         document.addEventListener('DOMContentLoaded', () => {
             const journalForm = document.getElementById('journal-form');
             const journalDate = document.getElementById('journal-date');
@@ -153,6 +153,7 @@
             const quoteElement = document.getElementById('gratitude-quote');
             const newQuoteBtn = document.getElementById('new-quote-btn');
             const userTabsContainer = document.getElementById('user-tabs-container');
+            const mainHeader = document.getElementById('main-header');
             const mainTitle = document.getElementById('main-title');
             const mainSubtitle = document.getElementById('main-subtitle');
             const entriesTitle = document.getElementById('entries-title');
@@ -177,13 +178,22 @@
                 const metadataRef = doc(db, "journalApp", "metadata");
                 metadataUnsubscribe = onSnapshot(metadataRef, async (docSnap) => {
                     const lastActiveView = localStorage.getItem('activeView');
+                    let localPrimaryUser = localStorage.getItem('primaryUser');
+
                     if (docSnap.exists()) {
                         appState.users = docSnap.data().users;
+                        if (!localPrimaryUser || !appState.users[localPrimaryUser]) {
+                            localPrimaryUser = Object.keys(appState.users)[0];
+                            localStorage.setItem('primaryUser', localPrimaryUser);
+                        }
+                        appState.primaryUser = localPrimaryUser;
                         appState.activeView = (lastActiveView && (lastActiveView === 'feed' || appState.users[lastActiveView])) ? lastActiveView : 'feed';
                     } else {
                         const defaultUser = '래민';
                         appState.users = { [defaultUser]: { password: null, hasNew: false } };
                         appState.activeView = 'feed';
+                        appState.primaryUser = defaultUser;
+                        localStorage.setItem('primaryUser', defaultUser);
                         await setDoc(metadataRef, { users: appState.users });
                     }
                     if (appState.activeView !== 'feed' && appState.users[appState.activeView] && appState.users[appState.activeView].hasNew) {
@@ -299,21 +309,7 @@
                         await addDoc(commentsRef, { text: input.value, createdAt: serverTimestamp() });
                         input.value = '';
                     });
-                    document.getElementById('like-btn').addEventListener('click', async () => {
-                        const entryRef = doc(db, "journalApp", data.author, "entries", data.id);
-                        const feedRef = doc(db, "feedEntries", data.id);
-                        await runTransaction(db, async (transaction) => {
-                            const entryDoc = await transaction.get(entryRef);
-                            if (!entryDoc.exists()) throw "문서가 존재하지 않습니다!";
-                            const currentLikes = entryDoc.data().likes || 0;
-                            const likedBy = entryDoc.data().likedBy || [];
-                            const uid = auth.currentUser.uid;
-                            const newLikedBy = likedBy.includes(uid) ? likedBy.filter(id => id !== uid) : [...likedBy, uid];
-                            const newLikes = newLikedBy.length;
-                            transaction.update(entryRef, { likes: newLikes, likedBy: newLikedBy });
-                            transaction.update(feedRef, { likes: newLikes });
-                        });
-                    });
+                    document.getElementById('like-btn').addEventListener('click', () => handleLikeClick(data.id, data.author));
                 }
             };
 
@@ -322,7 +318,7 @@
                 userTabsContainer.innerHTML = '';
                 const feedTab = document.createElement('button');
                 feedTab.className = `user-tab relative flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors duration-200 ${appState.activeView === 'feed' ? 'bg-amber-500 text-white' : 'text-gray-500 hover:bg-amber-100'}`;
-                feedTab.textContent = '모두'; // [수정] '피드' -> '모두'
+                feedTab.textContent = '모두';
                 feedTab.dataset.user = 'feed';
                 userTabsContainer.appendChild(feedTab);
 
@@ -345,18 +341,28 @@
                 userTabsContainer.appendChild(addUserBtn);
             };
             const updateTitleAndForm = () => {
-                if (appState.activeView === 'feed') {
+                const isMyDiary = appState.activeView === appState.primaryUser;
+                const isFeed = appState.activeView === 'feed';
+
+                if (isFeed) {
+                    mainHeader.style.display = 'block';
                     mainTitle.textContent = '모두의 감사일기';
                     mainSubtitle.textContent = '다른 사람들의 감사한 하루를 둘러보세요.';
                     entriesTitle.textContent = '모두의 기록들';
                     journalForm.style.display = 'none';
                     quoteContainer.style.display = 'none';
-                } else {
+                } else if (isMyDiary) {
+                    mainHeader.style.display = 'block';
                     mainTitle.textContent = `${appState.activeView || ''}의 감사 일기장`;
                     mainSubtitle.textContent = '감사했던 일들을 기록하세요.';
                     entriesTitle.textContent = '나의 기록들';
                     journalForm.style.display = 'block';
                     quoteContainer.style.display = 'block';
+                } else {
+                    mainHeader.style.display = 'none';
+                    entriesTitle.textContent = `${appState.activeView || ''}님의 기록들`;
+                    journalForm.style.display = 'none';
+                    quoteContainer.style.display = 'none';
                 }
             };
             const renderEntries = () => {
@@ -367,7 +373,7 @@
                 } else {
                     appState.entries.forEach(entry => {
                         const entryElement = document.createElement('div');
-                        entryElement.className = 'entry-item-clickable bg-amber-50 p-4 rounded-xl border border-amber-200 transition-shadow hover:shadow-md';
+                        entryElement.className = 'bg-amber-50 p-4 rounded-xl border border-amber-200';
                         entryElement.dataset.id = entry.id;
                         const date = new Date(entry.date);
                         const adjustedDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
@@ -375,7 +381,29 @@
                         const tempDiv = document.createElement('div');
                         tempDiv.innerHTML = entry.content;
                         const textPreview = tempDiv.textContent || tempDiv.innerText || "";
-                        entryElement.innerHTML = `<div class="flex justify-between items-start mb-2"><p class="font-semibold text-amber-800">${formattedDate}</p><div class="flex space-x-2"><button class="edit-btn text-gray-400 hover:text-green-600 text-xs font-bold py-1 px-2 rounded">수정</button><button class="delete-btn text-gray-400 hover:text-red-500 text-xs font-bold py-1 px-2 rounded">삭제</button></div></div><p class="text-gray-700 whitespace-pre-wrap truncate">${textPreview}</p><div class="flex items-center space-x-4 text-sm text-gray-500 mt-2"><span class="flex items-center"><i class="fa-regular fa-heart mr-1"></i> ${entry.likes || 0}</span></div>`;
+                        const liked = entry.likedBy && entry.likedBy.includes(auth.currentUser.uid);
+
+                        entryElement.innerHTML = `
+                            <div class="flex justify-between items-start mb-2">
+                                <p class="font-semibold text-amber-800">${formattedDate}</p>
+                                <div class="flex space-x-2">
+                                    <button class="edit-btn text-gray-400 hover:text-green-600 text-xs font-bold py-1 px-2 rounded">수정</button>
+                                    <button class="delete-btn text-gray-400 hover:text-red-500 text-xs font-bold py-1 px-2 rounded">삭제</button>
+                                </div>
+                            </div>
+                            <div class="entry-content-clickable cursor-pointer">
+                                <p class="text-gray-700 whitespace-pre-wrap truncate">${textPreview}</p>
+                            </div>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 mt-2 pt-2 border-t border-amber-100">
+                                <button class="like-btn heart-btn ${liked ? 'liked' : ''} flex items-center space-x-1 hover:text-red-500">
+                                    <i class="fa-solid fa-heart"></i> 
+                                    <span>${entry.likes || 0}</span>
+                                </button>
+                                <button class="comment-btn flex items-center space-x-1 hover:text-blue-500">
+                                    <i class="fa-regular fa-comment"></i>
+                                    <span>댓글</span>
+                                </button>
+                            </div>`;
                         entriesList.appendChild(entryElement);
                     });
                 }
@@ -388,15 +416,34 @@
                 } else {
                     appState.entries.forEach(entry => {
                         const entryElement = document.createElement('div');
-                        entryElement.className = 'entry-item-clickable bg-amber-50 p-4 rounded-xl border border-amber-200 transition-shadow hover:shadow-md';
+                        entryElement.className = 'bg-amber-50 p-4 rounded-xl border border-amber-200';
                         entryElement.dataset.id = entry.id;
-                        entryElement.dataset.author = entry.author; // 저자 정보 추가
-                        const date = entry.createdAt.toDate(); // Firestore 타임스탬프 변환
+                        entryElement.dataset.author = entry.author;
+                        const date = entry.createdAt.toDate();
                         const formattedDate = date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
                         const tempDiv = document.createElement('div');
                         tempDiv.innerHTML = entry.content;
                         const textPreview = tempDiv.textContent || tempDiv.innerText || "";
-                        entryElement.innerHTML = `<div class="flex justify-between items-start mb-2"><p class="font-semibold text-amber-800">${entry.author}님의 일기</p><span class="text-xs text-gray-500">${formattedDate}</span></div><p class="text-gray-700 whitespace-pre-wrap truncate">${textPreview}</p><div class="flex items-center space-x-4 text-sm text-gray-500 mt-2"><span class="flex items-center"><i class="fa-regular fa-heart mr-1"></i> ${entry.likes || 0}</span></div>`;
+                        const liked = entry.likedBy && entry.likedBy.includes(auth.currentUser.uid);
+
+                        entryElement.innerHTML = `
+                            <div class="flex justify-between items-start mb-2">
+                                <p class="font-semibold text-amber-800">${entry.author}님의 일기</p>
+                                <span class="text-xs text-gray-500">${formattedDate}</span>
+                            </div>
+                            <div class="entry-content-clickable cursor-pointer">
+                                <p class="text-gray-700 whitespace-pre-wrap truncate">${textPreview}</p>
+                            </div>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 mt-2 pt-2 border-t border-amber-100">
+                                <button class="like-btn heart-btn ${liked ? 'liked' : ''} flex items-center space-x-1 hover:text-red-500">
+                                    <i class="fa-solid fa-heart"></i> 
+                                    <span>${entry.likes || 0}</span>
+                                </button>
+                                <button class="comment-btn flex items-center space-x-1 hover:text-blue-500">
+                                    <i class="fa-regular fa-comment"></i>
+                                    <span>댓글</span>
+                                </button>
+                            </div>`;
                         entriesList.appendChild(entryElement);
                     });
                 }
@@ -417,6 +464,26 @@
                     const stopDrag = () => { document.documentElement.removeEventListener('mousemove', doDrag, false); document.documentElement.removeEventListener('mouseup', stopDrag, false); };
                     document.documentElement.addEventListener('mousemove', doDrag, false); document.documentElement.addEventListener('mouseup', stopDrag, false);
                 });
+            };
+            
+            // --- 좋아요 핸들러 ---
+            const handleLikeClick = async (entryId, author) => {
+                const entryRef = doc(db, "journalApp", author, "entries", entryId);
+                const feedRef = doc(db, "feedEntries", entryId);
+                try {
+                    await runTransaction(db, async (transaction) => {
+                        const entryDoc = await transaction.get(entryRef);
+                        if (!entryDoc.exists()) throw "문서가 존재하지 않습니다!";
+                        const likedBy = entryDoc.data().likedBy || [];
+                        const uid = auth.currentUser.uid;
+                        const newLikedBy = likedBy.includes(uid) ? likedBy.filter(id => id !== uid) : [...likedBy, uid];
+                        const newLikes = newLikedBy.length;
+                        transaction.update(entryRef, { likes: newLikes, likedBy: newLikedBy });
+                        transaction.update(feedRef, { likes: newLikes, likedBy: newLikedBy });
+                    });
+                } catch (error) {
+                    console.error("좋아요 처리 실패: ", error);
+                }
             };
 
             // --- 이벤트 리스너 ---
@@ -472,7 +539,6 @@
                         if (appState.users[user].password) showModal('password', { user: user, onPassword: action });
                         else showModal('confirmDelete', { message: `'${user}' 사용자의 모든 일기가 사라집니다.`, onConfirm: action });
                     } else {
-                        // [수정] 탭 이동 버그 수정
                         if (appState.activeView === user) return;
                         appState.activeView = user; 
                         localStorage.setItem('activeView', user);
@@ -508,17 +574,19 @@
                 const entryId = entryElement.dataset.id;
                 const author = entryElement.dataset.author || appState.activeView;
                 const entryData = appState.entries.find(entry => entry.id === entryId);
-                
+
                 const performAction = (action) => { if (appState.users[author].password) showModal('password', { user: author, onPassword: action }); else action(); };
 
-                if (e.target.classList.contains('delete-btn') && appState.activeView !== 'feed') {
+                if (e.target.closest('.like-btn')) {
+                    handleLikeClick(entryId, author);
+                } else if (e.target.closest('.delete-btn') && appState.activeView !== 'feed' && appState.activeView === appState.primaryUser) {
                     performAction(async () => {
                         showModal('confirmDelete', { message: '이 일기를 삭제합니다.', onConfirm: async () => { 
                             await deleteDoc(doc(db, "journalApp", author, "entries", entryId));
                             await deleteDoc(doc(db, "feedEntries", entryId));
                         }});
                     });
-                } else if (e.target.classList.contains('edit-btn') && appState.activeView !== 'feed') {
+                } else if (e.target.closest('.edit-btn') && appState.activeView !== 'feed' && appState.activeView === appState.primaryUser) {
                     performAction(() => {
                         showModal('edit', { content: entryData.content, onSave: async (newContent) => { 
                             const entryRef = doc(db, "journalApp", author, "entries", entryId);
@@ -527,7 +595,7 @@
                             await updateDoc(feedRef, { content: newContent });
                         }});
                     });
-                } else if (entryData) {
+                } else if (entryData && (e.target.closest('.entry-content-clickable') || e.target.closest('.comment-btn'))) {
                     const date = new Date(entryData.date);
                     const adjustedDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
                     const formattedDate = adjustedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
