@@ -156,7 +156,7 @@
                 apiKey: "AIzaSyDIKlFzyguBn9p4iQzI53DGdFb79Xqcqyg",
                 authDomain: "gam-sa-ilgi.firebaseapp.com",
                 projectId: "gam-sa-ilgi",
-                storageBucket: "gam-sa-ilgi.appspot.com", // .appspot.com 으로 수정
+                storageBucket: "gam-sa-ilgi.appspot.com",
                 messagingSenderId: "459918214357",
                 appId: "1:459918214357:web:2eff745e4a128f7d67ce5c",
                 measurementId: "G-0JTV8VKBEJ"
@@ -190,7 +190,8 @@
 
         // --- 데이터 리스너 설정 ---
         async function setupListeners() {
-            const metadataRef = doc(db, "journal", "metadata");
+            // [수정] 메타데이터 경로 수정 (컬렉션/문서)
+            const metadataRef = doc(db, "journalApp", "metadata");
 
             metadataUnsubscribe = onSnapshot(metadataRef, async (docSnap) => {
                 if (docSnap.exists()) {
@@ -225,8 +226,10 @@
 
         function setupEntriesListener() {
             if (entriesUnsubscribe) entriesUnsubscribe();
+            if (!appState.activeUser) return; // 활성 유저가 없으면 실행하지 않음
 
-            const entriesRef = collection(db, `journal/users/${appState.activeUser}/entries`);
+            // [수정] 일기 경로 수정 (컬렉션/문서/컬렉션)
+            const entriesRef = collection(db, "journalApp", appState.activeUser, "entries");
             const q = query(entriesRef);
 
             entriesUnsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -290,7 +293,7 @@
                     const errorMsg = modalContainer.querySelector('#user-error-msg');
                     
                     if (newUser && !appState.users[newUser]) {
-                        const metadataRef = doc(db, "journal", "metadata");
+                        const metadataRef = doc(db, "journalApp", "metadata");
                         const newUsers = { ...appState.users, [newUser]: { password: password || null, hasNew: false } };
                         await updateDoc(metadataRef, { users: newUsers });
                         appState.activeUser = newUser;
@@ -447,13 +450,14 @@
                 if (e.target.closest('.delete-user-btn')) {
                     const action = async () => {
                         loadingOverlay.style.display = 'flex';
-                        const entriesRef = collection(db, `journal/users/${user}/entries`);
+                        // [수정] 사용자 삭제 경로 수정
+                        const entriesRef = collection(db, "journalApp", user, "entries");
                         const querySnapshot = await getDocs(entriesRef);
                         const batch = writeBatch(db);
                         querySnapshot.forEach((doc) => batch.delete(doc.ref));
                         await batch.commit();
                         
-                        const metadataRef = doc(db, "journal", "metadata");
+                        const metadataRef = doc(db, "journalApp", "metadata");
                         const newUsers = { ...appState.users };
                         delete newUsers[user];
                         await updateDoc(metadataRef, { users: newUsers });
@@ -464,7 +468,7 @@
                 } else {
                     appState.activeUser = user;
                     localStorage.setItem('activeUser', user);
-                    const metadataRef = doc(db, "journal", "metadata");
+                    const metadataRef = doc(db, "journalApp", "metadata");
                     const updatedUsers = { ...appState.users };
                     if(updatedUsers[user]) updatedUsers[user].hasNew = false;
                     await updateDoc(metadataRef, { users: updatedUsers });
@@ -482,14 +486,15 @@
             }
             
             loadingOverlay.style.display = 'flex';
-            const entriesRef = collection(db, `journal/users/${appState.activeUser}/entries`);
+            // [수정] 일기 추가 경로 수정
+            const entriesRef = collection(db, "journalApp", appState.activeUser, "entries");
             await addDoc(entriesRef, {
                 date: journalDate.value,
                 content: content,
                 createdAt: new Date()
             });
 
-            const metadataRef = doc(db, "journal", "metadata");
+            const metadataRef = doc(db, "journalApp", "metadata");
             const updatedUsers = { ...appState.users };
             Object.keys(updatedUsers).forEach(user => { if (user !== appState.activeUser) updatedUsers[user].hasNew = true; });
             await updateDoc(metadataRef, { users: updatedUsers });
@@ -515,7 +520,8 @@
                     showModal('confirmDelete', {
                         message: '이 일기를 삭제합니다.',
                         onConfirm: async () => {
-                            const entryRef = doc(db, `journal/users/${appState.activeUser}/entries`, entryId);
+                            // [수정] 일기 삭제 경로 수정
+                            const entryRef = doc(db, "journalApp", appState.activeUser, "entries", entryId);
                             await deleteDoc(entryRef);
                         }
                     });
@@ -525,7 +531,8 @@
                     showModal('edit', {
                         content: entryData.content,
                         onSave: async (newContent) => {
-                            const entryRef = doc(db, `journal/users/${appState.activeUser}/entries`, entryId);
+                            // [수정] 일기 수정 경로 수정
+                            const entryRef = doc(db, "journalApp", appState.activeUser, "entries", entryId);
                             await updateDoc(entryRef, { content: newContent });
                         }
                     });
