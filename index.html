@@ -123,7 +123,7 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
@@ -151,9 +151,16 @@
 
         // --- Firebase 초기화 및 인증 ---
         async function initializeFirebase() {
-            // 이 변수들은 Canvas 환경에서 자동으로 제공됩니다.
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+            // 여기에 당신의 Firebase 설정 정보를 직접 입력하세요.
+            const firebaseConfig = {
+                apiKey: "AIzaSyDIKlFzyguBn9p4iQzI53DGdFb79Xqcqyg",
+                authDomain: "gam-sa-ilgi.firebaseapp.com",
+                projectId: "gam-sa-ilgi",
+                storageBucket: "gam-sa-ilgi.appspot.com", // .appspot.com 으로 수정
+                messagingSenderId: "459918214357",
+                appId: "1:459918214357:web:2eff745e4a128f7d67ce5c",
+                measurementId: "G-0JTV8VKBEJ"
+            };
             
             if (!firebaseConfig.apiKey) {
                 loadingOverlay.innerHTML = "Firebase 설정이 필요합니다.";
@@ -172,11 +179,7 @@
                 } else {
                     console.log("인증 정보 없음, 익명 로그인 시도...");
                     try {
-                        if (typeof __initial_auth_token !== 'undefined') {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
+                        await signInAnonymously(auth);
                     } catch (error) {
                         console.error("익명 로그인 실패:", error);
                         loadingOverlay.innerHTML = "인증에 실패했습니다.";
@@ -187,15 +190,12 @@
 
         // --- 데이터 리스너 설정 ---
         async function setupListeners() {
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const metadataRef = doc(db, `artifacts/${appId}/public/data/journal`);
+            const metadataRef = doc(db, "journal", "metadata");
 
-            // 메타데이터(사용자 목록 등) 실시간 감시
             metadataUnsubscribe = onSnapshot(metadataRef, async (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     appState.users = data.users;
-                    // 로컬에 저장된 activeUser가 유효한지 확인, 아니면 첫 사용자로 설정
                     const lastActiveUser = localStorage.getItem('activeUser');
                     if (lastActiveUser && appState.users[lastActiveUser]) {
                         appState.activeUser = lastActiveUser;
@@ -203,14 +203,12 @@
                         appState.activeUser = Object.keys(appState.users)[0];
                     }
                 } else {
-                    // 첫 실행 시 기본 데이터 생성
                     const defaultUser = '래민';
                     appState.users = { [defaultUser]: { password: null, hasNew: false } };
                     appState.activeUser = defaultUser;
                     await setDoc(metadataRef, { users: appState.users });
                 }
                 
-                // 사용자 탭에 'New' 마크 제거
                 if (appState.users[appState.activeUser]) {
                     appState.users[appState.activeUser].hasNew = false;
                     await updateDoc(metadataRef, { users: appState.users });
@@ -218,19 +216,17 @@
                 
                 renderTabs();
                 updateTitle();
-                setupEntriesListener(); // 활성 사용자가 정해지면 일기 리스너 설정
+                setupEntriesListener();
             }, (error) => {
                 console.error("메타데이터 감시 실패:", error);
                 loadingOverlay.innerHTML = "데이터를 불러오는 데 실패했습니다.";
             });
         }
 
-        // 활성 사용자의 일기 목록 실시간 감시
         function setupEntriesListener() {
-            if (entriesUnsubscribe) entriesUnsubscribe(); // 이전 리스너 해제
+            if (entriesUnsubscribe) entriesUnsubscribe();
 
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const entriesRef = collection(db, `artifacts/${appId}/public/data/journal/users/${appState.activeUser}/entries`);
+            const entriesRef = collection(db, `journal/users/${appState.activeUser}/entries`);
             const q = query(entriesRef);
 
             entriesUnsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -239,7 +235,7 @@
                     appState.entries.push({ id: doc.id, ...doc.data() });
                 });
                 renderEntries();
-                loadingOverlay.style.display = 'none'; // 데이터 로드 완료 후 로딩 숨김
+                loadingOverlay.style.display = 'none';
             }, (error) => {
                 console.error("일기 감시 실패:", error);
             });
@@ -294,11 +290,9 @@
                     const errorMsg = modalContainer.querySelector('#user-error-msg');
                     
                     if (newUser && !appState.users[newUser]) {
-                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                        const metadataRef = doc(db, `artifacts/${appId}/public/data/journal`);
+                        const metadataRef = doc(db, "journal", "metadata");
                         const newUsers = { ...appState.users, [newUser]: { password: password || null, hasNew: false } };
                         await updateDoc(metadataRef, { users: newUsers });
-                        // 새 사용자로 즉시 전환
                         appState.activeUser = newUser;
                         localStorage.setItem('activeUser', newUser);
                         closeModal();
@@ -355,7 +349,7 @@
             }
         };
 
-        // --- 이미지 리사이즈 로직 (이전과 동일) ---
+        // --- 이미지 리사이즈 로직 ---
         const makeImageResizable = (img) => {
             document.querySelectorAll('.resizable-wrapper').forEach(wrapper => {
                 wrapper.parentNode.insertBefore(wrapper.firstChild, wrapper);
@@ -408,9 +402,8 @@
             const file = e.target.files[0];
             if (!file) return;
             
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const userId = auth.currentUser.uid;
-            const filePath = `artifacts/${appId}/${userId}/${Date.now()}-${file.name}`;
+            const filePath = `journalImages/${userId}/${Date.now()}-${file.name}`;
             const storageRef = ref(storage, filePath);
 
             try {
@@ -454,16 +447,13 @@
                 if (e.target.closest('.delete-user-btn')) {
                     const action = async () => {
                         loadingOverlay.style.display = 'flex';
-                        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                        // 1. 사용자 일기 전체 삭제
-                        const entriesRef = collection(db, `artifacts/${appId}/public/data/journal/users/${user}/entries`);
+                        const entriesRef = collection(db, `journal/users/${user}/entries`);
                         const querySnapshot = await getDocs(entriesRef);
                         const batch = writeBatch(db);
                         querySnapshot.forEach((doc) => batch.delete(doc.ref));
                         await batch.commit();
                         
-                        // 2. 메타데이터에서 사용자 삭제
-                        const metadataRef = doc(db, `artifacts/${appId}/public/data/journal`);
+                        const metadataRef = doc(db, "journal", "metadata");
                         const newUsers = { ...appState.users };
                         delete newUsers[user];
                         await updateDoc(metadataRef, { users: newUsers });
@@ -474,8 +464,7 @@
                 } else {
                     appState.activeUser = user;
                     localStorage.setItem('activeUser', user);
-                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                    const metadataRef = doc(db, `artifacts/${appId}/public/data/journal`);
+                    const metadataRef = doc(db, "journal", "metadata");
                     const updatedUsers = { ...appState.users };
                     if(updatedUsers[user]) updatedUsers[user].hasNew = false;
                     await updateDoc(metadataRef, { users: updatedUsers });
@@ -493,16 +482,14 @@
             }
             
             loadingOverlay.style.display = 'flex';
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const entriesRef = collection(db, `artifacts/${appId}/public/data/journal/users/${appState.activeUser}/entries`);
+            const entriesRef = collection(db, `journal/users/${appState.activeUser}/entries`);
             await addDoc(entriesRef, {
                 date: journalDate.value,
                 content: content,
                 createdAt: new Date()
             });
 
-            // 다른 사용자에게 'New' 알림
-            const metadataRef = doc(db, `artifacts/${appId}/public/data/journal`);
+            const metadataRef = doc(db, "journal", "metadata");
             const updatedUsers = { ...appState.users };
             Object.keys(updatedUsers).forEach(user => { if (user !== appState.activeUser) updatedUsers[user].hasNew = true; });
             await updateDoc(metadataRef, { users: updatedUsers });
@@ -528,8 +515,7 @@
                     showModal('confirmDelete', {
                         message: '이 일기를 삭제합니다.',
                         onConfirm: async () => {
-                            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                            const entryRef = doc(db, `artifacts/${appId}/public/data/journal/users/${appState.activeUser}/entries`, entryId);
+                            const entryRef = doc(db, `journal/users/${appState.activeUser}/entries`, entryId);
                             await deleteDoc(entryRef);
                         }
                     });
@@ -539,8 +525,7 @@
                     showModal('edit', {
                         content: entryData.content,
                         onSave: async (newContent) => {
-                            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                            const entryRef = doc(db, `artifacts/${appId}/public/data/journal/users/${appState.activeUser}/entries`, entryId);
+                            const entryRef = doc(db, `journal/users/${appState.activeUser}/entries`, entryId);
                             await updateDoc(entryRef, { content: newContent });
                         }
                     });
