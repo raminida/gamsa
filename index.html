@@ -128,10 +128,10 @@
 
     <!-- Firebase SDK -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, getDocs, writeBatch, runTransaction, serverTimestamp, orderBy, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, getDocs, writeBatch, runTransaction, serverTimestamp, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         // --- 전역 변수 및 상수 ---
         const gratitudeQuotes = [ "감사하는 마음은 최고의 미덕일 뿐만 아니라, 모든 미덕의 아버지이다.", "세상에서 가장 즐거운 일은 감사하는 마음으로 사는 것이다.", "감사는 마음의 기억이다.", "작은 것에 감사할 때, 우리는 더 많은 것을 받을 준비가 된다.", "매일 아침 눈을 뜰 때마다 살아있음에 감사하라.", "감사할 줄 아는 사람에게는 부족함이 없다.", "행복은 감사의 문으로 들어온다.", "감사는 평범한 날을 추수감사절로 바꾼다.", "숨 쉴 수 있음에 감사하고, 살아 있음에 감사하라.", "감사하는 마음은 영혼을 위한 최고의 휴식이다.", "세상에서 가장 아름다운 기도는 '감사합니다'이다.", "햇살 한 줌, 바람 한 점에도 감사할 이유가 있다.", "당연하게 여겼던 모든 것들이 사실은 기적이었다.", "감사는 행복으로 가는 가장 빠른 길이다.", "오늘 내가 받은 모든 것에 감사한다.", "작은 기쁨들이 모여 큰 행복을 만든다.", "매일이 선물이라는 것을 기억하라.", "감사할수록 감사할 일이 더 많이 생긴다.", "감사는 과거를 이해하게 하고, 현재에 평화를 가져오며, 미래에 대한 비전을 창조한다.", "가장 큰 축복은 보이지 않는 곳에 있다.", "오늘 하루도 무사히 보냈음에 감사한다.", "건강한 몸과 마음을 주셔서 감사합니다.", "맛있는 음식을 먹을 수 있음에 감사합니다.", "따뜻한 집이 있다는 것에 감사합니다.", "나를 사랑해주는 사람들이 곁에 있어 감사합니다.", "배울 수 있는 기회가 있음에 감사합니다.", "아침에 눈을 뜰 수 있다는 사실에 감사합니다.", "실수로부터 배울 수 있음에 감사합니다.", "아름다운 음악을 들을 수 있음에 감사합니다.", "맑은 공기를 마실 수 있음에 감사합니다.", "오늘의 날씨에 감사합니다.", "나 자신으로 살아갈 수 있음에 감사합니다.", "웃을 수 있는 순간들에 감사합니다.", "힘들 때 기댈 수 있는 친구가 있어 감사합니다.", "새로운 하루를 시작할 힘을 주셔서 감사합니다.", "좋은 책을 읽을 수 있는 시간에 감사합니다.", "나를 성장시키는 모든 경험에 감사합니다.", "평화로운 순간들에 감사합니다.", "따뜻한 차 한잔의 여유에 감사합니다.", "나의 꿈을 응원해주는 사람들이 있어 감사합니다.", "오늘 하루 동안 만난 모든 인연에 감사합니다.", "깨끗한 물을 마실 수 있음에 감사합니다.", "편안한 잠자리에 감사합니다.", "자연의 아름다움을 느낄 수 있음에 감사합니다.", "나의 노력을 알아주는 사람이 있음에 감사합니다.", "용서할 수 있는 마음에 감사합니다.", "사랑을 주고받을 수 있음에 감사합니다.", "오늘 흘린 땀방울에 감사합니다.", "나를 믿어주는 마음에 감사합니다.", "작은 친절을 베풀 수 있는 기회에 감사합니다.", "넘어져도 다시 일어설 수 있는 용기에 감사합니다.", "함께 웃고 떠들 수 있는 동료가 있어 감사합니다.", "오늘 하루도 수고한 나 자신에게 감사합니다.", "새로운 것을 배울 수 있는 호기심에 감사합니다.", "어려움을 극복할 수 있는 지혜에 감사합니다.", "나를 필요로 하는 곳이 있음에 감사합니다.", "따뜻한 햇살 아래 산책할 수 있음에 감사합니다.", "가족들의 건강에 감사합니다.", "오늘의 소소한 행복에 감사합니다.", "나를 웃게 만드는 모든 것에 감사합니다.", "고요한 아침 시간에 감사합니다.", "편안하게 쉴 수 있는 주말에 감사합니다.", "목표를 향해 나아갈 수 있음에 감사합니다.", "나의 감정을 솔직하게 표현할 수 있음에 감사합니다.", "도움이 필요할 때 손 내밀어주는 사람들에게 감사합니다.", "아름다운 노을을 볼 수 있음에 감사합니다.", "포기하지 않는 나의 끈기에 감사합니다.", "좋은 영화 한 편 볼 수 있는 여유에 감사합니다.", "나의 부족함을 채워주는 사람들에게 감사합니다.", "오늘 하루도 최선을 다한 나에게 감사합니다.", "편안한 신발을 신고 걸을 수 있음에 감사합니다.", "밤하늘의 별을 볼 수 있음에 감사합니다.", "시원한 바람을 느낄 수 있음에 감사합니다.", "나를 응원하는 댓글 하나에 감사합니다.", "어제의 나보다 성장한 오늘의 나에게 감사합니다.", "창밖에 내리는 빗소리에 감사합니다.", "나의 이야기를 들어주는 사람이 있음에 감사합니다.", "건강하게 일할 수 있는 직장이 있음에 감사합니다.", "새로운 아이디어가 떠오른 순간에 감사합니다.", "나를 둘러싼 모든 것들의 조화에 감사합니다.", "어려운 문제를 해결했을 때의 성취감에 감사합니다.", "나를 있는 그대로 받아들여 주는 사람들에게 감사합니다.", "오늘도 무언가를 해냈다는 사실에 감사합니다.", "달콤한 간식을 먹을 수 있는 즐거움에 감사합니다.", "좋은 향기를 맡을 수 있음에 감사합니다.", "나의 작은 노력이 누군가에게 도움이 되었을 때 감사합니다.", "세상의 모든 지식에 접근할 수 있음에 감사합니다.", "힘든 하루 끝에 마시는 시원한 물 한 잔에 감사합니다.", "나의 선택을 존중해주는 사람들에게 감사합니다.", "오늘 하루 동안 느낀 모든 감정에 감사합니다.", "아무것도 하지 않고 쉴 수 있는 시간에 감사합니다.", "나의 재능을 나눌 수 있음에 감사합니다.", "세상은 여전히 아름답다는 것을 느낄 때 감사합니다.", "실패는 성공의 어머니임을 알게 해주셔서 감사합니다.", "오늘 하루도 살아있음에 감사합니다." ];
@@ -344,6 +344,7 @@
             };
             const updateTitleAndForm = () => {
                 const isFeed = appState.activeView === 'feed';
+                const isPrimaryUser = appState.activeView === appState.primaryUser;
 
                 if (isFeed) {
                     mainHeader.style.display = 'block';
@@ -358,7 +359,7 @@
                     mainSubtitle.textContent = '감사했던 일들을 기록하세요.';
                     entriesTitle.textContent = `${appState.activeView || ''}님의 기록들`;
                     quoteContainer.style.display = 'block';
-                    journalForm.style.display = 'block'; // [수정] 항상 글쓰기 폼 표시
+                    journalForm.style.display = isPrimaryUser ? 'block' : 'none';
                 }
             };
             const renderEntries = () => {
@@ -508,7 +509,7 @@
                         range.setStartAfter(space); range.collapse(true);
                         selection.removeAllRanges(); selection.addRange(range);
                     }
-                } catch (error) { console.error("사진 업로드 실패:", error); alert("사진 업로드에 실패했습니다."); } 
+                } catch (error) { console.error("사진 업로드 실패:", error); } 
                 finally { journalPhoto.value = ''; loadingOverlay.style.display = 'none'; }
             });
 
@@ -566,9 +567,9 @@
             journalForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const content = journalEntry.innerHTML;
-                if (!content.trim() || journalEntry.textContent.trim() === '' && !journalEntry.querySelector('img')) { alert('내용을 입력해주세요.'); return; }
+                if (!content.trim() || journalEntry.textContent.trim() === '' && !journalEntry.querySelector('img')) { return; }
                 loadingOverlay.style.display = 'flex';
-                // [수정] 글쓰기는 항상 primaryUser에게 저장
+                // 글쓰기는 항상 primaryUser에게 저장
                 const entriesRef = collection(db, "journalApp", appState.primaryUser, "entries");
                 const newEntryData = { date: journalDate.value, content: content, createdAt: serverTimestamp(), likes: 0, likedBy: [] };
                 const docRef = await addDoc(entriesRef, newEntryData);
@@ -591,7 +592,7 @@
                 const author = entryElement.dataset.author || appState.activeView;
                 const entryData = appState.entries.find(entry => entry.id === entryId);
 
-                const performAction = (action) => { if (appState.users[author].password) showModal('password', { user: author, onPassword: action }); else action(); };
+                const performAction = (action) => { if (appState.activeView !== 'feed' && appState.users[author].password) showModal('password', { user: author, onPassword: action }); else action(); };
 
                 if (e.target.closest('.like-btn')) {
                     handleLikeClick(entryId, author);
