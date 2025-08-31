@@ -174,6 +174,8 @@
             const quoteContainer = document.getElementById('quote-container');
             const daysCounter = document.getElementById('days-counter');
 
+            journalDate.valueAsDate = new Date(); // 오늘 날짜로 기본 설정
+
             // --- Firebase 초기화 및 인증 ---
             async function initializeFirebase() {
                 const firebaseConfig = { apiKey: "AIzaSyDIKlFzyguBn9p4iQzI53DGdFb79Xqcqyg", authDomain: "gam-sa-ilgi.firebaseapp.com", projectId: "gam-sa-ilgi", storageBucket: "gam-sa-ilgi.appspot.com", messagingSenderId: "459918214357", appId: "1:459918214357:web:2eff745e4a128f7d67ce5c", measurementId: "G-0JTV8VKBEJ" };
@@ -270,7 +272,31 @@
                         break;
                     case 'viewEntry':
                         const liked = data.likedBy && data.likedBy.includes(auth.currentUser.uid);
-                        modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="view-modal-backdrop"><div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-2xl modal-fade-in flex flex-col"><div class="flex justify-between items-center"><h2 class="text-2xl font-bold">${data.author}님의 ${data.date} 일기</h2><button class="modal-cancel-btn text-2xl">&times;</button></div><div class="entry-content whitespace-pre-wrap mt-4 flex-grow overflow-y-auto">${data.content}</div><div class="mt-4 pt-4 border-t"><div class="flex items-center justify-between mb-2"><button id="like-btn" class="heart-btn ${liked ? 'liked' : ''} text-2xl text-gray-400"><i class="fa-solid fa-heart"></i></button><span id="like-count" class="text-sm text-gray-600">${data.likes || 0}명이 좋아합니다</span></div><div id="comments-section" class="space-y-2 max-h-32 overflow-y-auto"></div><form id="comment-form" class="mt-2 flex space-x-2"><input id="comment-input" type="text" class="flex-grow border rounded-lg px-3 py-1" placeholder="익명 댓글 달기..." required><button type="submit" class="bg-gray-200 px-3 py-1 rounded-lg text-sm">등록</button></form></div></div></div>`;
+                        modalHtml = `
+                        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="view-modal-backdrop">
+                            <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl modal-fade-in flex flex-col max-h-[90vh]">
+                                <div class="p-6 border-b">
+                                    <div class="flex justify-between items-center">
+                                        <h2 class="text-xl md:text-2xl font-bold">${data.author}님의 ${data.date} 일기</h2>
+                                        <button class="modal-cancel-btn text-2xl text-gray-500 hover:text-gray-800">&times;</button>
+                                    </div>
+                                </div>
+                                <div class="p-6 overflow-y-auto flex-grow">
+                                    <div class="entry-content whitespace-pre-wrap">${data.content}</div>
+                                </div>
+                                <div class="p-6 border-t bg-gray-50 rounded-b-2xl">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <button id="like-btn" class="heart-btn ${liked ? 'liked' : ''} text-2xl text-gray-400"><i class="fa-solid fa-heart"></i></button>
+                                        <span id="like-count" class="text-sm text-gray-600">${data.likes || 0}명이 좋아합니다</span>
+                                    </div>
+                                    <div id="comments-section" class="space-y-2 max-h-32 overflow-y-auto mb-2"></div>
+                                    <form id="comment-form" class="flex space-x-2">
+                                        <input id="comment-input" type="text" class="flex-grow border rounded-lg px-3 py-2 text-sm" placeholder="익명 댓글 달기..." required>
+                                        <button type="submit" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-amber-600">등록</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>`;
                         break;
                 }
                 modalContainer.innerHTML = modalHtml;
