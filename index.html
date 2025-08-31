@@ -34,10 +34,17 @@
         }
         .custom-file-upload:hover { background-color: #f3f4f6; }
         .new-badge {
-            position: absolute; top: 0; right: 0; transform: translate(40%, -40%);
-            background-color: #ef4444; color: white;
-            font-size: 0.6rem; font-weight: bold;
-            padding: 1px 4px; border-radius: 9999px;
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            border: 1.5px solid white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            z-index: 10;
         }
         .entry-content-clickable { cursor: pointer; }
         .editable-div {
@@ -93,6 +100,7 @@
         <header id="main-header" class="mb-6 text-center">
             <h1 id="main-title" class="text-4xl md:text-5xl font-bold text-amber-600 font-handwriting"></h1>
             <p id="main-subtitle" class="text-gray-500 mt-2">감사했던 일들을 기록하세요.</p>
+            <p id="days-counter" class="text-amber-800 mt-2 text-sm font-semibold bg-amber-100 rounded-full px-3 py-1 inline-block" style="display: none;"></p>
         </header>
 
         <div id="quote-container" class="mb-8 text-center bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
@@ -108,6 +116,9 @@
             <div>
                 <label for="journal-entry" class="block text-sm font-medium text-gray-700 mb-1">감사한 내용</label>
                 <div id="journal-entry" contenteditable="true" class="editable-div"></div>
+                 <div id="emoticon-bar" class="mt-2 flex space-x-3 items-center p-2 bg-gray-50 rounded-lg">
+                    <!-- Emoticons will be added here by JS -->
+                </div>
             </div>
             <div>
                 <label for="journal-photo" class="custom-file-upload"><i class="fa-solid fa-camera mr-2"></i>사진 추가하기</label>
@@ -142,6 +153,7 @@
         let entriesUnsubscribe = null;
         let commentsUnsubscribe = null;
         let savedRange = null;
+        let unlockedUsers = new Set(); // 비밀번호 해제한 사용자 저장
 
         document.addEventListener('DOMContentLoaded', () => {
             const journalForm = document.getElementById('journal-form');
@@ -160,6 +172,7 @@
             const modalContainer = document.getElementById('modal-container');
             const loadingOverlay = document.getElementById('loading-overlay');
             const quoteContainer = document.getElementById('quote-container');
+            const daysCounter = document.getElementById('days-counter');
 
             // --- Firebase 초기화 및 인증 ---
             async function initializeFirebase() {
@@ -244,7 +257,7 @@
                 let modalHtml = '';
                 switch (type) {
                     case 'edit':
-                        modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"><div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-lg modal-fade-in"><h2 class="text-2xl font-bold mb-4">일기 수정하기</h2><div id="edit-entry-div" contenteditable="true" class="editable-div">${data.content}</div><div class="mt-6 flex justify-end space-x-3"><button class="modal-cancel-btn px-4 py-2 bg-gray-200 rounded-lg">취소</button><button id="save-edit-btn" class="px-4 py-2 bg-amber-500 text-white rounded-lg">저장하기</button></div></div></div>`;
+                        modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"><div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-lg modal-fade-in"><h2 class="text-2xl font-bold mb-4">일기 수정하기</h2><div id="edit-entry-div" contenteditable="true" class="editable-div mb-4">${data.content}</div><div><label for="edit-journal-photo" class="custom-file-upload"><i class="fa-solid fa-camera mr-2"></i>사진 추가하기</label><input type="file" id="edit-journal-photo" accept="image/*"></div><div class="mt-6 flex justify-end space-x-3"><button class="modal-cancel-btn px-4 py-2 bg-gray-200 rounded-lg">취소</button><button id="save-edit-btn" class="px-4 py-2 bg-amber-500 text-white rounded-lg">저장하기</button></div></div></div>`;
                         break;
                     case 'addUser':
                         modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"><form id="add-user-form" class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-sm modal-fade-in space-y-4"><h2 class="text-2xl font-bold">새 사용자 추가</h2><div><label>이름</label><input type="text" id="new-user-name" class="w-full px-4 py-2 border rounded-lg" required></div><div><label>비밀번호 (선택)</label><input type="password" id="new-user-password" class="w-full px-4 py-2 border rounded-lg"></div><div id="user-error-msg" class="text-red-500 text-sm h-5"></div><div class="mt-2 flex justify-end space-x-3"><button type="button" class="modal-cancel-btn px-4 py-2 bg-gray-200 rounded-lg">취소</button><button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-lg">추가하기</button></div></form></div>`;
@@ -290,6 +303,55 @@
                         } else { errorMsg.textContent = appState.users[newUser] ? '이미 존재하는 이름입니다.' : '이름을 입력해주세요.'; }
                     });
                 }
+                 if (type === 'edit') {
+                    const editEntryDiv = modalContainer.querySelector('#edit-entry-div');
+                    const editPhotoInput = modalContainer.querySelector('#edit-journal-photo');
+                    let editSavedRange = null;
+
+                    editEntryDiv.addEventListener('blur', () => {
+                        const selection = window.getSelection();
+                        if (selection.rangeCount > 0) {
+                            editSavedRange = selection.getRangeAt(0);
+                        }
+                    });
+
+                    editPhotoInput.addEventListener('change', async (e) => {
+                        const file = e.target.files[0]; if (!file) return;
+                        const loadingOverlay = document.getElementById('loading-overlay');
+                        loadingOverlay.style.display = 'flex';
+                        const userId = auth.currentUser.uid;
+                        const filePath = `journalImages/${userId}/${Date.now()}-${file.name}`;
+                        const storageRef = ref(storage, filePath);
+                        try {
+                            await uploadBytes(storageRef, file);
+                            const url = await getDownloadURL(storageRef);
+                            const img = document.createElement('img');
+                            img.src = url;
+                            editEntryDiv.focus();
+                            const selection = window.getSelection();
+                            if (editSavedRange) {
+                                selection.removeAllRanges();
+                                selection.addRange(editSavedRange);
+                            }
+                            if (selection.getRangeAt && selection.rangeCount) {
+                                let range = selection.getRangeAt(0);
+                                range.deleteContents();
+                                range.insertNode(img);
+                                const space = document.createTextNode("\u00A0");
+                                range.insertNode(space);
+                                range.setStartAfter(space);
+                                range.collapse(true);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                            }
+                        } catch (error) {
+                            console.error("사진 업로드 실패:", error);
+                        } finally {
+                            editPhotoInput.value = '';
+                            loadingOverlay.style.display = 'none';
+                        }
+                    });
+                }
                 if (type === 'viewEntry') {
                     const commentsRef = collection(db, "journalApp", data.author, "entries", data.id, "comments");
                     const q = query(commentsRef, orderBy("createdAt", "asc"));
@@ -330,7 +392,7 @@
                     tab.className = `user-tab relative flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors duration-200 ${isActive ? 'bg-amber-500 text-white' : 'text-gray-500 hover:bg-amber-100'}`;
                     tab.textContent = user;
                     tab.dataset.user = user;
-                    if (appState.users[user].hasNew) tab.innerHTML += `<span class="new-badge">New</span>`;
+                    if (appState.users[user].hasNew) tab.innerHTML += `<span class="new-badge"></span>`;
                     if (Object.keys(appState.users).length > 0) {
                         tab.innerHTML += `<span class="delete-user-btn absolute -top-1 -right-1 text-red-500 bg-white rounded-full w-4 h-4 flex items-center justify-center text-xs"><i class="fas fa-times-circle"></i></span>`;
                     }
@@ -366,7 +428,21 @@
                 if (appState.entries.length === 0) {
                     entriesList.appendChild(emptyMessage);
                     emptyMessage.style.display = 'block';
+                    daysCounter.style.display = 'none';
                 } else {
+                    daysCounter.style.display = 'inline-block';
+                    const firstEntryDateStr = appState.entries[appState.entries.length - 1].date;
+                    const [year, month, day] = firstEntryDateStr.split('-').map(Number);
+                    const firstDate = new Date(year, month - 1, day);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    firstDate.setHours(0,0,0,0);
+                    
+                    const diffTime = today.getTime() - firstDate.getTime();
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    daysCounter.innerHTML = `🧡 ${diffDays}일째 감사 기록중 🧡`;
+
+                    emptyMessage.style.display = 'none';
                     appState.entries.forEach(entry => {
                         const entryElement = document.createElement('div');
                         entryElement.className = 'bg-amber-50 p-4 rounded-xl border border-amber-200';
@@ -405,11 +481,13 @@
                 }
             };
             const renderFeedEntries = () => {
+                daysCounter.style.display = 'none';
                 entriesList.innerHTML = '';
                 if (appState.entries.length === 0) {
                     entriesList.appendChild(emptyMessage);
                     emptyMessage.style.display = 'block';
                 } else {
+                    emptyMessage.style.display = 'none';
                     appState.entries.forEach(entry => {
                         const entryElement = document.createElement('div');
                         entryElement.className = 'bg-amber-50 p-4 rounded-xl border border-amber-200';
@@ -482,6 +560,49 @@
                 }
             };
 
+            // --- 이모티콘 설정 ---
+            function setupEmoticons() {
+                const emoticonBar = document.getElementById('emoticon-bar');
+                const emoticons = ['😊', '🥰', '👍', '🙏', '🎉', '☀️', '❤️', '😂', '😭', '😮'];
+                
+                emoticonBar.innerHTML = '';
+                emoticons.forEach(emo => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'text-2xl hover:scale-125 transition-transform focus:outline-none';
+                    button.textContent = emo;
+                    button.addEventListener('click', () => {
+                        journalEntry.focus();
+                        const selection = window.getSelection();
+                        
+                        if (savedRange) {
+                            selection.removeAllRanges();
+                            selection.addRange(savedRange);
+                        }
+
+                        if (selection.getRangeAt && selection.rangeCount) {
+                            const range = selection.getRangeAt(0);
+                            range.deleteContents();
+                            const textNode = document.createTextNode(emo);
+                            range.insertNode(textNode);
+                            
+                            const spaceNode = document.createTextNode('\u00A0');
+                            range.setStartAfter(textNode);
+                            range.insertNode(spaceNode);
+                            range.setStartAfter(spaceNode);
+                            range.collapse(true);
+
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            
+                            savedRange = range;
+                        }
+                    });
+                    emoticonBar.appendChild(button);
+                });
+            }
+
+
             // --- 이벤트 리스너 ---
             document.addEventListener('click', (e) => {
                 const target = e.target;
@@ -553,8 +674,15 @@
                         if (appState.users[user].password) showModal('password', { user: user, onPassword: action });
                         else showModal('confirmDelete', { message: `'${user}' 사용자의 모든 일기가 사라집니다.`, onConfirm: action });
                     } else {
-                        if (user !== 'feed' && user !== appState.primaryUser && appState.users[user].password) {
-                            showModal('password', { user: user, onPassword: () => switchView(user) });
+                        const needsPassword = user !== 'feed' && user !== appState.primaryUser && appState.users[user].password;
+                        if (needsPassword && !unlockedUsers.has(user)) {
+                             showModal('password', { 
+                                 user: user, 
+                                 onPassword: () => {
+                                     unlockedUsers.add(user);
+                                     switchView(user);
+                                 } 
+                             });
                         } else {
                             switchView(user);
                         }
@@ -624,6 +752,7 @@
             displayRandomQuote();
 
             // --- 앱 시작 ---
+            setupEmoticons();
             initializeFirebase();
         });
     </script>
