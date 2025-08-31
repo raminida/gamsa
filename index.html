@@ -100,7 +100,6 @@
         <header id="main-header" class="mb-6 text-center">
             <h1 id="main-title" class="text-4xl md:text-5xl font-bold text-amber-600 font-handwriting"></h1>
             <p id="main-subtitle" class="text-gray-500 mt-2">감사했던 일들을 기록하세요.</p>
-            <p id="days-counter" class="text-amber-800 mt-2 text-sm font-semibold bg-amber-100 rounded-full px-3 py-1 inline-block" style="display: none;"></p>
         </header>
 
         <div id="quote-container" class="mb-8 text-center bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
@@ -114,9 +113,12 @@
                 <input type="date" id="journal-date" class="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500" required>
             </div>
             <div>
-                <label for="journal-entry" class="block text-sm font-medium text-gray-700 mb-1">감사한 내용</label>
+                <div class="flex justify-between items-center mb-1">
+                    <label for="journal-entry" class="block text-sm font-medium text-gray-700">감사한 내용</label>
+                    <p id="days-counter" class="text-amber-800 text-xs font-semibold bg-amber-100 rounded-full px-2 py-0.5" style="display: none;"></p>
+                </div>
                 <div id="journal-entry" contenteditable="true" class="editable-div"></div>
-                 <div id="emoticon-bar" class="mt-2 flex space-x-3 items-center p-2 bg-gray-50 rounded-lg">
+                 <div id="emoticon-bar" class="mt-2 flex flex-wrap justify-center gap-3 items-center p-2 bg-gray-50 rounded-lg">
                     <!-- Emoticons will be added here by JS -->
                 </div>
             </div>
@@ -174,7 +176,14 @@
             const quoteContainer = document.getElementById('quote-container');
             const daysCounter = document.getElementById('days-counter');
 
-            journalDate.valueAsDate = new Date(); // 오늘 날짜로 기본 설정
+            const setToday = () => {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                journalDate.value = `${year}-${month}-${day}`;
+            };
+            setToday();
 
             // --- Firebase 초기화 및 인증 ---
             async function initializeFirebase() {
@@ -440,6 +449,7 @@
                     entriesTitle.textContent = '모두의 기록들';
                     journalForm.style.display = 'none';
                     quoteContainer.style.display = 'none';
+                    daysCounter.style.display = 'none';
                 } else {
                     mainHeader.style.display = 'block';
                     mainTitle.textContent = `${appState.activeView || ''}의 감사 일기장`;
@@ -456,7 +466,7 @@
                     emptyMessage.style.display = 'block';
                     daysCounter.style.display = 'none';
                 } else {
-                    daysCounter.style.display = 'inline-block';
+                    daysCounter.style.display = 'block';
                     const firstEntryDateStr = appState.entries[appState.entries.length - 1].date;
                     const [year, month, day] = firstEntryDateStr.split('-').map(Number);
                     const firstDate = new Date(year, month - 1, day);
@@ -734,7 +744,8 @@
                 const updatedUsers = { ...appState.users };
                 Object.keys(updatedUsers).forEach(user => { if (user !== appState.primaryUser) updatedUsers[user].hasNew = true; });
                 await updateDoc(metadataRef, { users: updatedUsers });
-                journalEntry.innerHTML = ''; journalDate.valueAsDate = new Date();
+                journalEntry.innerHTML = ''; 
+                setToday();
                 loadingOverlay.style.display = 'none';
             });
 
