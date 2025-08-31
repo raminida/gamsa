@@ -344,7 +344,6 @@
             };
             const updateTitleAndForm = () => {
                 const isFeed = appState.activeView === 'feed';
-                const isPrimaryUser = appState.activeView === appState.primaryUser;
 
                 if (isFeed) {
                     mainHeader.style.display = 'block';
@@ -359,7 +358,7 @@
                     mainSubtitle.textContent = '감사했던 일들을 기록하세요.';
                     entriesTitle.textContent = `${appState.activeView || ''}님의 기록들`;
                     quoteContainer.style.display = 'block';
-                    journalForm.style.display = isPrimaryUser ? 'block' : 'none';
+                    journalForm.style.display = 'block';
                 }
             };
             const renderEntries = () => {
@@ -622,6 +621,7 @@
 
             const displayRandomQuote = () => { quoteElement.textContent = `"${gratitudeQuotes[Math.floor(Math.random() * gratitudeQuotes.length)]}"`; };
             newQuoteBtn.addEventListener('click', displayRandomQuote);
+            displayRandomQuote();
 
             // --- 앱 시작 ---
             initializeFirebase();
@@ -629,3 +629,4 @@
     </script>
 </body>
 </html>
+
