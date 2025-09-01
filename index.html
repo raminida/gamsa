@@ -1,1050 +1,874 @@
 <!DOCTYPE html>
-<html lang="ko" data-theme="dark">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>호수 오픈</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>모두의 감사 일기장 (Firebase)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Poppins:wght@600;700&display=stylesheet" rel="stylesheet">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Icon Library -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --bg-color: #121212; --surface-color: #1E1E1E; --primary-color: #4CAF50; --primary-variant-color: #81C784; --secondary-color: #FFFFFF; --text-color: #E0E0E0; --text-secondary-color: #A0A0A0; --accent-gold: #FFC107; --border-color: #333333; --shadow-color: rgba(0, 0, 0, 0.5);
-            --spacing-sm: 8px; --spacing-md: 12px; --spacing-lg: 20px; --radius: 8px;
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #FFFBF5; }
+        .font-handwriting { font-family: 'Gaegu', cursive; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fde8d3; }
+        ::-webkit-scrollbar-thumb { background: #f59e0b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #d97706; }
+        .modal-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        html[data-theme="light"] {
-            --bg-color: #F0F4F8; --surface-color: #FFFFFF; --primary-color: #1A3C34; --primary-variant-color: #2A6B5B; --text-color: #1F2937; --text-secondary-color: #6B7280; --border-color: #E5E7EB; --shadow-color: rgba(0, 0, 0, 0.1);
+        .delete-user-btn { opacity: 0; transition: opacity 0.2s ease-in-out; }
+        .user-tab:hover .delete-user-btn { opacity: 1; }
+        input[type="file"] { display: none; }
+        .custom-file-upload {
+            border: 1px solid #d1d5db; display: inline-block; padding: 6px 12px;
+            cursor: pointer; background-color: #f9fafb; border-radius: 0.5rem;
+            font-weight: 500; color: #374151; transition: background-color 0.2s;
         }
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: var(--spacing-md); transition: background-color 0.3s, color 0.3s; }
-        .container { max-width: 1700px; margin: 0 auto; }
-        h1 { font-family: 'Poppins', sans-serif; font-size: 2.8rem; font-weight: 900; text-align: center; color: var(--secondary-color); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-top: var(--spacing-lg); margin-bottom: 2rem; letter-spacing: -2px; text-shadow: 2px 2px 10px var(--shadow-color); }
-        .section { background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); margin-bottom: 2.5rem; border: 1px solid var(--border-color); }
-        h2 { font-family: 'Poppins', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: var(--spacing-sm); padding-bottom: var(--spacing-sm); border-bottom: 2px solid var(--border-color); }
-        #ranking-main-title { text-align: center; }
-        details { margin-bottom: 1rem; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border-color); }
-        details summary { padding: var(--spacing-md) 15px; cursor: pointer; font-size: 1.1rem; font-weight: 700; outline: none; transition: background 0.3s ease, color 0.3s ease; background: linear-gradient(135deg, #2a2a2a, #222222); color: var(--secondary-color); }
-        html[data-theme="light"] details summary { background: linear-gradient(135deg, #f9f9f9, #f1f1f1); color: var(--text-color); }
-        details[open] > summary { background: var(--primary-color); color: var(--bg-color); }
-        html[data-theme="light"] details[open] > summary { color: var(--secondary-color); }
-        .round-group-content { padding: 15px 10px 5px 10px; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border-color); }
-        html[data-theme="light"] .round-group-content { background: rgba(0,0,0,0.02); }
-        .table-wrapper { overflow-x: auto; overflow-y: auto; max-height: 70vh; max-width: 100%; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; min-width: 100%; border-collapse: collapse; }
-        th, td { padding: var(--spacing-md) 4px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; white-space: nowrap; }
-        #ranking-table thead th { position: sticky; top: 0; background: var(--surface-color); z-index: 10; cursor: pointer; }
-        #ranking-table thead th:hover { background: var(--primary-color); color: var(--bg-color); }
-        th { font-family: 'Poppins', sans-serif; background-color: rgba(0, 0, 0, 0.2); color: var(--primary-variant-color); font-weight: 700; }
-        html[data-theme="light"] th { background-color: #F9FAFB; }
-        .rank-cell { font-weight: 900; color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); position: relative; line-height: 1.2; }
-        .streak-cell { font-size: 0.7rem; white-space: nowrap; margin-left: var(--spacing-sm); }
-        .streak-win { color: #4CAF50; font-weight: bold; }
-        .streak-loss { color: #F44336; font-weight: bold; }
-        .streak-none { color: var(--text-secondary-color); }
-        #ranking-table th:nth-child(2), #ranking-table td:nth-child(2) { position: sticky; left: 0; background: var(--surface-color); z-index: 1; }
-        input[type="text"], input[type="search"], input[type="password"], select { width: 100%; min-width: 70px; max-width: 100px; padding: var(--spacing-sm); background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; color: var(--text-color); font-family: 'Noto Sans KR', sans-serif; text-align: center; }
-        .schedule-table .player-input { min-width: 80px; max-width: 110px; }
-        .schedule-table .score-input { min-width: 40px; max-width: 60px; }
-        input.ranking-player, input.mmr { min-width: 80px; max-width: 120px; }
-        input.readonly { background-color: #252525; color: var(--text-secondary-color); font-weight: bold; }
-        html[data-theme="light"] input.readonly { background-color: #f0f0f0; }
-        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: var(--spacing-lg); }
-        .btn { display: inline-block; padding: var(--spacing-md) var(--spacing-lg); background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #FFFFFF; text-decoration: none; border-radius: var(--radius); cursor: pointer; font-weight: 700; font-size: 1rem; border: none; text-align: center; }
-        html[data-theme="dark"] .btn { color: var(--bg-color); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .update-btn { width: 100%; margin-top: var(--spacing-lg); padding: 15px; background: linear-gradient(135deg, var(--accent-gold), #F5B02E); color: var(--bg-color); border: none; border-radius: var(--radius); font-size: 1.2rem; font-weight: 900; cursor: pointer; }
-        .btn.danger { background: linear-gradient(135deg, #f44336, #e57373); color: #fff; }
-        .toast { position: fixed; bottom: var(--spacing-lg); left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #333, #111); color: #fff; padding: var(--spacing-md) 25px; border-radius: 50px; box-shadow: 0 5px 15px var(--shadow-color); opacity: 0; transition: opacity 0.4s, transform 0.4s; font-weight: 700; z-index: 2001; }
-        .toast.show { opacity: 1; }
-        .championship-star { color: var(--accent-gold); text-shadow: 0 0 5px var(--shadow-color); font-size: 1.1rem; font-weight: 900; }
-        .theme-toggle { position: fixed; top: 15px; right: 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .ranking-player[value$="*"] { color: var(--primary-variant-color); }
-        .ranking-controls { display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-md); flex-wrap: wrap; align-items: center; }
-        .ranking-filter { display: flex; gap: var(--spacing-sm); }
-        #ranking-search { max-width: 200px; }
-        .filter-btn { padding: var(--spacing-sm) var(--spacing-md); background: var(--surface-color); border: 1px solid var(--border-color); border-radius: var(--radius); cursor: pointer; color: var(--text-color); font-weight: 700; }
-        .filter-btn.active { background: var(--primary-color); color: var(--bg-color); }
-        .saved-indicator { color: var(--accent-gold); margin-left: 5px; font-size: 0.9rem; }
-        .saved-info { color: var(--text-secondary-color); margin-left: 5px; font-size: 0.8rem; }
-        .champion-name { color: var(--accent-gold); font-weight: bold; }
-        input[type="checkbox"] { margin: 0 auto; display: block; transform: scale(1.2); }
-        .popup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--surface-color); padding: var(--spacing-lg); border-radius: var(--radius); box-shadow: 0 10px 30px var(--shadow-color); z-index: 2000; color: var(--text-color); border: 1px solid var(--border-color); max-width: 90vw; width: 500px; text-align: center; }
-        .popup.show { display: block; }
-        .close-btn { position: absolute; top: var(--spacing-sm); right: var(--spacing-sm); background: none; border: none; color: var(--text-color); font-size: 1.5rem; cursor: pointer; }
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1999; }
-        .overlay.show { display: block; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .popup-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
-        .btn.secondary { background: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); }
-        .potw-section { background: linear-gradient(135deg, var(--primary-color), var(--primary-variant-color)); color: #fff; padding: var(--spacing-lg); border-radius: var(--radius); margin-bottom: var(--spacing-lg); text-align: center; }
-        html[data-theme="dark"] .potw-section { color: var(--bg-color); }
-        .potw-section h3 { font-family: 'Poppins', sans-serif; font-size: 1.5rem; margin: 0 0 10px 0; text-shadow: 1px 1px 5px rgba(0,0,0,0.3); }
-        .potw-player { font-size: 2rem; font-weight: 900; }
-        .potw-reason { font-size: 1rem; opacity: 0.9; }
-        #player-management-list { max-height: 60vh; overflow-y: auto; margin-top: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius); }
-        .player-management-item { display: flex; justify-content: space-between; align-items: center; padding: var(--spacing-md); border-bottom: 1px solid var(--border-color); }
-        .player-management-item:last-child { border-bottom: none; }
-        .player-management-item span { font-weight: bold; flex-basis: 40%; text-align: left; }
-        .player-management-item .controls { display: flex; align-items: center; gap: 15px; }
-        /* Season Tabs */
-        .season-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
-        .tab-btn { padding: 10px 20px; font-size: 1rem; font-weight: 700; background: none; border: none; color: var(--text-secondary-color); cursor: pointer; border-bottom: 3px solid transparent; transition: color 0.3s, border-color 0.3s; }
-        .tab-btn.active { color: var(--primary-color); border-bottom: 3px solid var(--primary-color); }
-        @media screen and (max-width: 600px) {
-            body { padding: 4px; }
-            .section { padding: var(--spacing-md); }
-            th, td { padding: 4px 2px; font-size: 0.7rem; }
-            input[type="text"], input[type="search"], input[type="password"], select { min-width: 70px; max-width: 100px; font-size: 0.7rem; }
-            input.ranking-player, input.mmr { min-width: 70px; max-width: 100px; }
-            input.best-partner { min-width: 200px; max-width: 225px; }
-            .schedule-table .player-input { min-width: 55px; max-width: 65px; }
-            .schedule-table .score-input { min-width: 40px; max-width: 50px; }
-            .schedule-table th, .schedule-table td { padding: 4px 1px; }
-            .schedule-table td { border: 0.5px solid var(--border-color); }
-            .btn { padding: 8px 12px; font-size: 0.9rem; }
-            h1 { font-size: 2rem; }
-            h2 { font-size: 1.5rem; }
-            #ranking-main-title span { display: block; }
-            .saved-info { font-size: 0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; display: inline-block; vertical-align: middle; }
-            .popup { max-width: 90vw; width: auto; padding: var(--spacing-md); }
-            .ranking-controls { flex-direction: column; align-items: stretch; }
-            .season-tabs { gap: 5px; }
-            .tab-btn { padding: 8px 10px; font-size: 0.9rem; }
+        .custom-file-upload:hover { background-color: #f3f4f6; }
+        .new-badge {
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            border: 1.5px solid white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .entry-content-clickable { cursor: pointer; }
+        .editable-div {
+            min-height: 10rem; border: 1px solid #d1d5db; border-radius: 0.5rem;
+            padding: 0.5rem 1rem; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); transition: all 0.3s;
+        }
+        .editable-div:focus {
+            outline: none; --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+            --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+            box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+            border-color: #f59e0b; --tw-ring-color: rgb(245 158 11 / 0.5);
+        }
+        .editable-div:empty::before { content: "오늘 어떤 감사한 일이 있었나요?"; color: #9ca3af; cursor: text; }
+        .editable-div img, .entry-content img { max-width: 100%; border-radius: 0.5rem; margin: 0.5rem 0; }
+        
+        .resizable-wrapper { position: relative; display: inline-block; line-height: 0; }
+        .resizable-wrapper.active { outline: 2px solid #3b82f6; }
+        .resize-handle {
+            position: absolute; width: 12px; height: 12px;
+            background-color: #3b82f6; border: 2px solid white;
+            border-radius: 50%; z-index: 10;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .resize-handle.br { bottom: -6px; right: -6px; cursor: se-resize; }
+        .loader {
+            border: 4px solid #f3f3f3; border-top: 4px solid #f59e0b;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+            position: absolute; top: 50%; left: 50%;
+            margin-left: -20px; margin-top: -20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .heart-btn .fa-heart { transition: color 0.3s ease, transform 0.3s ease; }
+        .heart-btn.liked .fa-heart { color: #ef4444; animation: heartBeat 0.5s ease; }
+        @keyframes heartBeat {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
-<body>
-    <button class="theme-toggle" id="theme-toggle">☀️</button>
-    <div class="container">
-        <h1>호수 오픈</h1>
-        <div class="section" id="schedule-section">
-            <h2 id="schedule-title">2025 가을시즌 경기 일정</h2>
-            <div class="input-group">
-                <button id="how-to-use-btn" class="btn">이용방법</button>
-            </div>
-            <div id="schedule-container"></div>
-            <button class="btn save-all-btn">모든 데이터 저장</button>
-            <button id="update-ranking" class="btn update-btn">순위 업데이트</button>
-            <button id="restore-backup-btn" class="btn danger" style="margin-top: 10px;">💾 오류 수정 (백업 복구)</button>
-        </div>
-        <div class="section">
-            <h2 id="ranking-main-title">시즌 순위표 <span id="season-countdown" style="font-size: 1rem; color: var(--accent-gold);"></span></h2>
-            
-            <div class="season-tabs">
-                <button class="tab-btn active" data-view="current">2025 가을시즌</button>
-                <button class="tab-btn" data-view="previous">2025 여름시즌</button>
-                <button class="tab-btn" data-view="alltime">통산 기록</button>
-            </div>
+<body class="text-gray-800 flex items-center justify-center min-h-screen p-4">
 
-            <div id="potw-container"></div>
-            <div class="ranking-controls">
-                <div class="ranking-filter">
-                    <button class="filter-btn active" data-filter="all">통합 순위</button>
-                    <button class="filter-btn" data-filter="male">남자 순위</button>
-                    <button class="filter-btn" data-filter="female">여자 순위</button>
+    <div id="app-container" class="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8 relative">
+        <div id="loading-overlay" class="absolute inset-0 bg-white bg-opacity-75 z-[9999] flex items-center justify-center rounded-2xl" style="display: none;">
+            <div class="loader"></div>
+        </div>
+        
+        <div class="mb-6">
+            <div id="user-tabs-container" class="flex items-center space-x-2 border-b-2 border-amber-100 pb-2 overflow-x-auto"></div>
+        </div>
+
+        <header id="main-header" class="mb-6 text-center">
+            <h1 id="main-title" class="text-4xl md:text-5xl font-bold text-amber-600 font-handwriting"></h1>
+            <p id="main-subtitle" class="text-gray-500 mt-2">감사했던 일들을 기록하세요.</p>
+        </header>
+
+        <div id="quote-container" class="mb-8 text-center bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-lg">
+            <p id="gratitude-quote" class="text-gray-700 italic"></p>
+            <button id="new-quote-btn" class="text-xs text-amber-600 hover:text-amber-800 mt-2 font-semibold">다른 문구 보기</button>
+        </div>
+
+        <form id="journal-form" class="mb-8 space-y-4">
+            <div>
+                <label for="journal-date" class="block text-sm font-medium text-gray-700 mb-1">날짜</label>
+                <input type="date" id="journal-date" class="w-full px-4 py-2 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500" required>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <label for="journal-entry" class="block text-sm font-medium text-gray-700">감사한 내용</label>
+                    <p id="days-counter" class="text-amber-800 text-xs font-semibold bg-amber-100 rounded-full px-2 py-0.5" style="display: none;"></p>
                 </div>
-                <input type="search" id="ranking-search" list="player-name-list" placeholder="선수 이름 검색...">
-                <datalist id="player-name-list"></datalist>
-                <button id="manage-players-btn" class="btn secondary">선수 관리</button>
+                <div id="journal-entry" contenteditable="true" class="editable-div"></div>
+                 <div id="emoticon-bar" class="mt-2 flex flex-wrap justify-center gap-3 items-center p-2 bg-gray-50 rounded-lg">
+                    <!-- Emoticons will be added here by JS -->
+                </div>
             </div>
-            <div class="table-wrapper">
-                <table id="ranking-table">
-                    <thead>
-                        <tr>
-                            <th data-sort="rank">순위</th>
-                            <th data-sort="player">선수</th>
-                            <th data-sort="mmr">MMR</th>
-                            <th data-sort="championships">우승</th>
-                            <th data-sort="wins">승</th>
-                            <th data-sort="losses">패</th>
-                            <th data-sort="winRate">승률(%)</th>
-                            <th data-sort="avgGameDiff">평균 득실</th>
-                            <th data-sort="closeRate">접전률(%)</th>
-                            <th data-sort="dominantWins">압도승률(%)</th>
-                            <th data-sort="dominantLosses">압도패률(%)</th>
-                            <th data-sort="bestPartner">최고 파트너</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <div>
+                <label for="journal-photo" class="custom-file-upload"><i class="fa-solid fa-camera mr-2"></i>사진 추가하기</label>
+                <input type="file" id="journal-photo" accept="image/*">
             </div>
-            <div class="btn-group">
-                <a href="dash.html" class="btn" id="dashboard-link">통계 대시보드</a>
-                <button id="download-csv" class="btn">CSV 다운로드</button>
-                <a href="hall_of_fame.html" class="btn" id="hof-link">시즌별 기록</a>
-                <a href="partner.html" class="btn" id="partner-link">파트너 전적 & 랭킹</a> 
+            <button type="submit" class="w-full bg-amber-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">기록하기</button>
+        </form>
+
+        <div>
+            <h2 id="entries-title" class="text-3xl font-semibold text-gray-800 border-b-2 border-amber-200 pb-2 mb-4 font-handwriting">나의 기록들</h2>
+            <div id="entries-list" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                <p id="empty-message" class="text-center text-gray-500 py-4">아직 작성된 일기가 없어요.</p>
             </div>
         </div>
-    </div>
-    <div id="toast" class="toast"></div>
-    <div id="overlay" class="overlay"></div>
-    <!-- 이용방법 팝업 -->
-    <div id="info-popup" class="popup">
-        <button class="close-btn" data-target="info-popup">×</button>
-        <h3>이용 방법</h3>
-        <p>게임 끝나면 회차 눌러 빈 회차에 이름 작성 (6게임 또는 4게임만 가능, 4게임은 체크 필수). 여성은 이름 뒤 * 붙이고, 스코어 입력 후 '모든 데이터 저장' 버튼 누르면 끝!</p>
-    </div>
-    <!-- 선수 관리 팝업 -->
-    <div id="player-management-popup" class="popup">
-        <button class="close-btn" data-target="player-management-popup">×</button>
-        <h3>선수 관리</h3>
-        <p style="font-size: 0.8rem; color: var(--text-secondary-color);">잘못된 선수 삭제 또는 성별(*)을 수정합니다. <br><strong>※주의:</strong> 선수를 삭제한 후에는, 경기 일정표에서 해당 선수 이름을 직접 모두 지우고 저장해야 순위표에서 완전히 사라집니다.</p>
-        <div id="player-management-list"></div>
-        <div class="popup-buttons">
-            <button id="save-player-changes-btn" class="btn">변경사항 저장</button>
-        </div>
-    </div>
-    <!-- 비밀번호 입력 팝업 -->
-    <div id="password-popup" class="popup" style="width: 300px;">
-        <button class="close-btn" data-target="password-popup">×</button>
-        <h3>비밀번호 입력</h3>
-        <input type="password" id="password-input" style="width: 100%; margin-top: 10px; margin-bottom: 20px; padding: 10px; box-sizing: border-box;">
-        <button id="password-submit-btn" class="btn">확인</button>
     </div>
 
+    <div id="modal-container"></div>
+
+    <!-- Firebase SDK -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, serverTimestamp, writeBatch, onSnapshot, query, orderBy, limit, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, onSnapshot, collection, query, getDocs, writeBatch, runTransaction, serverTimestamp, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAlcszFYMqJjaJQHajx7K695zoeRS7PsxU",
-            authDomain: "tennis-plan-jibung.firebaseapp.com",
-            databaseURL: "https://tennis-plan-jibung-default-rtdb.firebaseio.com",
-            projectId: "tennis-plan-jibung",
-            storageBucket: "tennis-plan-jibung.appspot.com",
-            messagingSenderId: "491083537160",
-            appId: "1:491083537160:web:0c2ec53b1285aa1cdc6abd",
-            measurementId: "G-4CSJLPFJD6"
-        };
+        // --- 전역 변수 및 상수 ---
+        const gratitudeQuotes = [ "감사하는 마음은 최고의 미덕일 뿐만 아니라, 모든 미덕의 아버지이다.", "세상에서 가장 즐거운 일은 감사하는 마음으로 사는 것이다.", "감사는 마음의 기억이다.", "작은 것에 감사할 때, 우리는 더 많은 것을 받을 준비가 된다.", "매일 아침 눈을 뜰 때마다 살아있음에 감사하라.", "감사할 줄 아는 사람에게는 부족함이 없다.", "행복은 감사의 문으로 들어온다.", "감사는 평범한 날을 추수감사절로 바꾼다.", "숨 쉴 수 있음에 감사하고, 살아 있음에 감사하라.", "감사하는 마음은 영혼을 위한 최고의 휴식이다.", "세상에서 가장 아름다운 기도는 '감사합니다'이다.", "햇살 한 줌, 바람 한 점에도 감사할 이유가 있다.", "당연하게 여겼던 모든 것들이 사실은 기적이었다.", "감사는 행복으로 가는 가장 빠른 길이다.", "오늘 내가 받은 모든 것에 감사한다.", "작은 기쁨들이 모여 큰 행복을 만든다.", "매일이 선물이라는 것을 기억하라.", "감사할수록 감사할 일이 더 많이 생긴다.", "감사는 과거를 이해하게 하고, 현재에 평화를 가져오며, 미래에 대한 비전을 창조한다.", "가장 큰 축복은 보이지 않는 곳에 있다.", "오늘 하루도 무사히 보냈음에 감사한다.", "건강한 몸과 마음을 주셔서 감사합니다.", "맛있는 음식을 먹을 수 있음에 감사합니다.", "따뜻한 집이 있다는 것에 감사합니다.", "나를 사랑해주는 사람들이 곁에 있어 감사합니다.", "배울 수 있는 기회가 있음에 감사합니다.", "아침에 눈을 뜰 수 있다는 사실에 감사합니다.", "실수로부터 배울 수 있음에 감사합니다.", "아름다운 음악을 들을 수 있음에 감사합니다.", "맑은 공기를 마실 수 있음에 감사합니다.", "오늘의 날씨에 감사합니다.", "나 자신으로 살아갈 수 있음에 감사합니다.", "웃을 수 있는 순간들에 감사합니다.", "힘들 때 기댈 수 있는 친구가 있어 감사합니다.", "새로운 하루를 시작할 힘을 주셔서 감사합니다.", "좋은 책을 읽을 수 있는 시간에 감사합니다.", "나를 성장시키는 모든 경험에 감사합니다.", "평화로운 순간들에 감사합니다.", "따뜻한 차 한잔의 여유에 감사합니다.", "나의 꿈을 응원해주는 사람들이 있어 감사합니다.", "오늘 하루 동안 만난 모든 인연에 감사합니다.", "깨끗한 물을 마실 수 있음에 감사합니다.", "편안한 잠자리에 감사합니다.", "자연의 아름다움을 느낄 수 있음에 감사합니다.", "나의 노력을 알아주는 사람이 있음에 감사합니다.", "용서할 수 있는 마음에 감사합니다.", "사랑을 주고받을 수 있음에 감사합니다.", "오늘 흘린 땀방울에 감사합니다.", "나를 믿어주는 마음에 감사합니다.", "작은 친절을 베풀 수 있는 기회에 감사합니다.", "넘어져도 다시 일어설 수 있는 용기에 감사합니다.", "함께 웃고 떠들 수 있는 동료가 있어 감사합니다.", "오늘 하루도 수고한 나 자신에게 감사합니다.", "새로운 것을 배울 수 있는 호기심에 감사합니다.", "어려움을 극복할 수 있는 지혜에 감사합니다.", "나를 필요로 하는 곳이 있음에 감사합니다.", "따뜻한 햇살 아래 산책할 수 있음에 감사합니다.", "가족들의 건강에 감사합니다.", "오늘의 소소한 행복에 감사합니다.", "나를 웃게 만드는 모든 것에 감사합니다.", "고요한 아침 시간에 감사합니다.", "편안하게 쉴 수 있는 주말에 감사합니다.", "목표를 향해 나아갈 수 있음에 감사합니다.", "나의 감정을 솔직하게 표현할 수 있음에 감사합니다.", "도움이 필요할 때 손 내밀어주는 사람들에게 감사합니다.", "아름다운 노을을 볼 수 있음에 감사합니다.", "포기하지 않는 나의 끈기에 감사합니다.", "좋은 영화 한 편 볼 수 있는 여유에 감사합니다.", "나의 부족함을 채워주는 사람들에게 감사합니다.", "오늘 하루도 최선을 다한 나에게 감사합니다.", "편안한 신발을 신고 걸을 수 있음에 감사합니다.", "밤하늘의 별을 볼 수 있음에 감사합니다.", "시원한 바람을 느낄 수 있음에 감사합니다.", "나를 응원하는 댓글 하나에 감사합니다.", "어제의 나보다 성장한 오늘의 나에게 감사합니다.", "창밖에 내리는 빗소리에 감사합니다.", "나의 이야기를 들어주는 사람이 있음에 감사합니다.", "건강하게 일할 수 있는 직장이 있음에 감사합니다.", "새로운 아이디어가 떠오른 순간에 감사합니다.", "나를 둘러싼 모든 것들의 조화에 감사합니다.", "어려운 문제를 해결했을 때의 성취감에 감사합니다.", "나를 있는 그대로 받아들여 주는 사람들에게 감사합니다.", "오늘도 무언가를 해냈다는 사실에 감사합니다.", "달콤한 간식을 먹을 수 있는 즐거움에 감사합니다.", "좋은 향기를 맡을 수 있음에 감사합니다.", "나의 작은 노력이 누군가에게 도움이 되었을 때 감사합니다.", "세상의 모든 지식에 접근할 수 있음에 감사합니다.", "힘든 하루 끝에 마시는 시원한 물 한 잔에 감사합니다.", "나의 선택을 존중해주는 사람들에게 감사합니다.", "오늘 하루 동안 느낀 모든 감정에 감사합니다.", "아무것도 하지 않고 쉴 수 있는 시간에 감사합니다.", "나의 재능을 나눌 수 있음에 감사합니다.", "세상은 여전히 아름답다는 것을 느낄 때 감사합니다.", "실패는 성공의 어머니임을 알게 해주셔서 감사합니다.", "오늘 하루도 살아있음에 감사합니다." ];
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        // --- 시즌 설정 ---
-        const BASE_COLLECTION = 'league';
-        const SEASONS = {
-            'v2': { name: '2025 가을시즌', endDate: '2025-11-30T23:59:59' },
-            'v1': { name: '2025 여름시즌', endDate: '2025-08-31T23:59:59' },
-        };
-        const CURRENT_SEASON_VERSION = 'v2';
-        const PREVIOUS_SEASON_VERSION = 'v1';
-        // --- /시즌 설정 ---
+        let db, auth, storage;
+        let appState = { users: {}, activeView: null, primaryUser: null, entries: [] };
+        let metadataUnsubscribe = null;
+        let entriesUnsubscribe = null;
+        let commentsUnsubscribe = null;
+        let savedRange = null;
+        let unlockedUsers = new Set(); // 비밀번호 해제한 사용자 저장
 
-        let currentFilter = 'all', sortKey = 'mmr', sortOrder = 'desc';
-        let allPlayersData = [];
-        let currentPotw = null;
-        let activeView = 'current'; // 'current', 'previous', 'alltime'
-        let scheduleUnsubscribe = null;
-        let rankingUnsubscribe = null;
+        document.addEventListener('DOMContentLoaded', () => {
+            const journalForm = document.getElementById('journal-form');
+            const journalDate = document.getElementById('journal-date');
+            const journalEntry = document.getElementById('journal-entry');
+            const journalPhoto = document.getElementById('journal-photo');
+            const entriesList = document.getElementById('entries-list');
+            const emptyMessage = document.getElementById('empty-message');
+            const quoteElement = document.getElementById('gratitude-quote');
+            const newQuoteBtn = document.getElementById('new-quote-btn');
+            const userTabsContainer = document.getElementById('user-tabs-container');
+            const mainHeader = document.getElementById('main-header');
+            const mainTitle = document.getElementById('main-title');
+            const mainSubtitle = document.getElementById('main-subtitle');
+            const entriesTitle = document.getElementById('entries-title');
+            const modalContainer = document.getElementById('modal-container');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const quoteContainer = document.getElementById('quote-container');
+            const daysCounter = document.getElementById('days-counter');
 
-        const showToast = (message) => {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        };
+            const setToday = () => {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                journalDate.value = `${year}-${month}-${day}`;
+            };
+            setToday();
 
-        const applyTheme = (theme) => {
-            const validTheme = theme === 'light' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', validTheme);
-            localStorage.setItem('theme', validTheme);
-            document.getElementById('theme-toggle').textContent = validTheme === 'dark' ? '☀️' : '🌙';
-        };
-        
-        const updateRankingTitleAndCountdown = (view) => {
-            const titleEl = document.getElementById('ranking-main-title');
-            let seasonVersion, seasonName, seasonEndDate;
-
-            if (view === 'current') {
-                seasonVersion = CURRENT_SEASON_VERSION;
-            } else if (view === 'previous') {
-                seasonVersion = PREVIOUS_SEASON_VERSION;
-            } else { // alltime
-                titleEl.innerHTML = '통산 기록 순위표 <span id="season-countdown" style="font-size: 1rem; color: var(--accent-gold);"></span>';
-                titleEl.querySelector('#season-countdown').textContent = '';
-                return;
+            // --- Firebase 초기화 및 인증 ---
+            async function initializeFirebase() {
+                const firebaseConfig = { apiKey: "AIzaSyDIKlFzyguBn9p4iQzI53DGdFb79Xqcqyg", authDomain: "gam-sa-ilgi.firebaseapp.com", projectId: "gam-sa-ilgi", storageBucket: "gam-sa-ilgi.appspot.com", messagingSenderId: "459918214357", appId: "1:459918214357:web:2eff745e4a128f7d67ce5c", measurementId: "G-0JTV8VKBEJ" };
+                if (!firebaseConfig.apiKey) { loadingOverlay.innerHTML = "Firebase 설정이 필요합니다."; return; }
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app); auth = getAuth(app); storage = getStorage(app);
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) { await setupListeners(); } 
+                    else { try { await signInAnonymously(auth); } catch (error) { console.error("익명 로그인 실패:", error); loadingOverlay.innerHTML = "인증에 실패했습니다."; } }
+                });
             }
 
-            seasonName = SEASONS[seasonVersion].name;
-            seasonEndDate = new Date(SEASONS[seasonVersion].endDate);
+            // --- 데이터 리스너 설정 ---
+            async function setupListeners() {
+                const metadataRef = doc(db, "journalApp", "metadata");
+                metadataUnsubscribe = onSnapshot(metadataRef, async (docSnap) => {
+                    const lastActiveView = localStorage.getItem('activeView');
+                    let localPrimaryUser = localStorage.getItem('primaryUser');
+
+                    if (docSnap.exists() && Object.keys(docSnap.data().users).length > 0) {
+                        appState.users = docSnap.data().users;
+                        if (!localPrimaryUser || !appState.users[localPrimaryUser]) {
+                            localPrimaryUser = Object.keys(appState.users)[0];
+                            localStorage.setItem('primaryUser', localPrimaryUser);
+                        }
+                        appState.primaryUser = localPrimaryUser;
+                        appState.activeView = (lastActiveView && (lastActiveView === 'feed' || appState.users[lastActiveView])) ? lastActiveView : 'feed';
+                    } else {
+                        const defaultUser = '래민';
+                        appState.users = { [defaultUser]: { password: null, hasNew: false } };
+                        appState.activeView = defaultUser;
+                        appState.primaryUser = defaultUser;
+                        localStorage.setItem('primaryUser', defaultUser);
+                        localStorage.setItem('activeView', defaultUser);
+                        await setDoc(metadataRef, { users: appState.users });
+                    }
+                    if (appState.activeView !== 'feed' && appState.users[appState.activeView] && appState.users[appState.activeView].hasNew) {
+                        appState.users[appState.activeView].hasNew = false;
+                        await updateDoc(metadataRef, { users: appState.users });
+                    }
+                    renderUI();
+                }, (error) => { console.error("메타데이터 감시 실패:", error); loadingOverlay.innerHTML = "데이터를 불러오는 데 실패했습니다."; });
+            }
             
-            titleEl.innerHTML = `${seasonName} 순위표 <span id="season-countdown" style="font-size: 1rem; color: var(--accent-gold);"></span>`;
-            const countdownEl = titleEl.querySelector('#season-countdown');
-
-            const now = new Date();
-            const diff = seasonEndDate - now;
-
-            if (diff > 0) {
-                const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                countdownEl.textContent = `(시즌 종료 D-${daysLeft})`;
-            } else {
-                countdownEl.textContent = '(시즌 종료)';
-            }
-        };
-
-
-        const createScheduleRounds = (savedRounds = new Map()) => {
-            const container = document.getElementById('schedule-container');
-            if (!container) return showToast("스케줄 컨테이너 오류!");
-            let roundsHtml = '';
-            const roundsPerCategory = 30, totalRounds = 200;
-
-            for (let category = 0; category < Math.ceil(totalRounds / roundsPerCategory); category++) {
-                const startRound = category * roundsPerCategory + 1;
-                const endRound = Math.min((category + 1) * roundsPerCategory, totalRounds);
-                roundsHtml += `<details class="round-group"><summary>회차 ${startRound} ~ ${endRound}</summary><div class="round-group-content">`;
-                for (let i = startRound; i <= endRound; i++) {
-                    const roundData = savedRounds.get(i);
-                    const isSaved = !!roundData;
-                    const savedDate = roundData?.timestamp ? new Date(roundData.timestamp).toLocaleDateString('ko-KR') : '';
-                    const champions = roundData?.champions?.map(name => `<span class="champion-name">${name}</span>`).join(', ') || '없음';
-                    roundsHtml += `
-                    <details class="${isSaved ? 'saved-round' : ''}">
-                        <summary>${i}회${isSaved ? `<span class="saved-indicator">💾</span><span class="saved-info">[${savedDate}, 우승: ${champions}]</span>` : ''}</summary>
-                        <div class="table-wrapper">
-                            <table class="schedule-table" data-round-id="${i}">
-                                <thead><tr><th>Player 1</th><th>Player 2</th><th>vs</th><th>Player 3</th><th>Player 4</th><th>Score</th><th>4점 선취</th></tr></thead>
-                                <tbody>
-                                    ${Array(3).fill().map(() => `
-                                    <tr>
-                                        <td><input type="text" placeholder="이름" class="player1 player-input"></td>
-                                        <td><input type="text" placeholder="이름" class="player2 player-input"></td>
-                                        <td>vs</td>
-                                        <td><input type="text" placeholder="이름" class="player3 player-input"></td>
-                                        <td><input type="text" placeholder="이름" class="player4 player-input"></td>
-                                        <td><input type="text" placeholder="6-4" class="score score-input"></td>
-                                        <td><input type="checkbox" class="is-four-point"></td>
-                                    </tr>`).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                        <button class="btn save-all-btn" style="margin: 10px 15px;">저장하기</button>
-                    </details>`;
+            function renderUI() {
+                renderTabs();
+                updateTitleAndForm();
+                if (appState.activeView === 'feed') {
+                    setupFeedListener();
+                } else {
+                    setupEntriesListener();
                 }
-                roundsHtml += `</div></details>`;
-            }
-            container.innerHTML = roundsHtml;
-        };
-        
-        const saveAllData = async () => {
-            if (!db) return showToast('DB 연결 실패!');
-            if (activeView !== 'current') {
-                showToast('현재 시즌 탭에서만 저장할 수 있습니다.');
-                return;
             }
 
-            const allSaveButtons = document.querySelectorAll('.save-all-btn');
-            allSaveButtons.forEach(btn => {
-                btn.disabled = true;
-                btn.textContent = '저장 중...';
-            });
+            function setupEntriesListener() {
+                if (entriesUnsubscribe) entriesUnsubscribe();
+                if (!appState.activeView || appState.activeView === 'feed') return;
+                const entriesRef = collection(db, "journalApp", appState.activeView, "entries");
+                const q = query(entriesRef, orderBy("date", "desc"));
+                entriesUnsubscribe = onSnapshot(q, (querySnapshot) => {
+                    appState.entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderEntries();
+                    loadingOverlay.style.display = 'none';
+                }, (error) => { console.error("일기 감시 실패:", error); });
+            }
 
-            try {
-                const scheduleDocRef = doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION);
-                const scheduleDoc = await getDoc(scheduleDocRef);
-                const existingTimestamps = new Map();
-                if (scheduleDoc.exists()) {
-                    (scheduleDoc.data().matches || []).forEach(match => {
-                        if (!existingTimestamps.has(match.round)) {
-                            existingTimestamps.set(match.round, match.timestamp);
+            function setupFeedListener() {
+                if (entriesUnsubscribe) entriesUnsubscribe();
+                const feedRef = collection(db, "feedEntries");
+                const q = query(feedRef, orderBy("createdAt", "desc"));
+                entriesUnsubscribe = onSnapshot(q, (querySnapshot) => {
+                    appState.entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderFeedEntries();
+                    loadingOverlay.style.display = 'none';
+                }, (error) => { console.error("피드 감시 실패:", error); });
+            }
+
+            // --- 모달 관리 ---
+            const showModal = (type, data = {}) => {
+                modalContainer.innerHTML = ''; 
+                let modalHtml = '';
+                switch (type) {
+                    case 'edit':
+                        modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"><div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-lg modal-fade-in"><h2 class="text-2xl font-bold mb-4">일기 수정하기</h2><div id="edit-entry-div" contenteditable="true" class="editable-div mb-4">${data.content}</div><div><label for="edit-journal-photo" class="custom-file-upload"><i class="fa-solid fa-camera mr-2"></i>사진 추가하기</label><input type="file" id="edit-journal-photo" accept="image/*"></div><div class="mt-6 flex justify-end space-x-3"><button class="modal-cancel-btn px-4 py-2 bg-gray-200 rounded-lg">취소</button><button id="save-edit-btn" class="px-4 py-2 bg-amber-500 text-white rounded-lg">저장하기</button></div></div></div>`;
+                        break;
+                    case 'addUser':
+                        modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"><form id="add-user-form" class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-sm modal-fade-in space-y-4"><h2 class="text-2xl font-bold">새 사용자 추가</h2><div><label>이름</label><input type="text" id="new-user-name" class="w-full px-4 py-2 border rounded-lg" required></div><div><label>비밀번호 (선택)</label><input type="password" id="new-user-password" class="w-full px-4 py-2 border rounded-lg"></div><div id="user-error-msg" class="text-red-500 text-sm h-5"></div><div class="mt-2 flex justify-end space-x-3"><button type="button" class="modal-cancel-btn px-4 py-2 bg-gray-200 rounded-lg">취소</button><button type="submit" class="px-4 py-2 bg-green-500 text-white rounded-lg">추가하기</button></div></form></div>`;
+                        break;
+                    case 'confirmDelete':
+                        modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"><div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-sm modal-fade-in text-center"><h2 class="text-xl font-bold mb-2">정말 삭제하시겠습니까?</h2><p class="text-gray-600 mb-6">${data.message}</p><div class="flex justify-center space-x-4"><button class="modal-cancel-btn px-6 py-2 bg-gray-200 rounded-lg">취소</button><button id="confirm-delete-btn" class="px-6 py-2 bg-red-500 text-white rounded-lg">삭제</button></div></div></div>`;
+                        break;
+                    case 'password':
+                        modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"><form id="password-form" class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-sm modal-fade-in"><h2 class="text-2xl font-bold mb-4">비밀번호 확인</h2><input type="password" id="password-input" class="w-full px-4 py-2 border rounded-lg" required><div id="password-error-msg" class="text-red-500 text-sm mt-2 h-5"></div><div class="mt-2 flex justify-end space-x-3"><button type="button" class="modal-cancel-btn px-4 py-2 bg-gray-200 rounded-lg">취소</button><button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg">확인</button></div></form></div>`;
+                        break;
+                    case 'error':
+                        modalHtml = `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[10000]"><div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 w-full max-w-sm modal-fade-in text-center"><h2 class="text-xl font-bold mb-2 text-red-500">오류</h2><p class="text-gray-600 mb-6">${data.message}</p><div class="flex justify-center"><button class="modal-cancel-btn px-6 py-2 bg-gray-200 rounded-lg">확인</button></div></div></div>`;
+                        break;
+                    case 'viewEntry':
+                        const liked = data.likedBy && data.likedBy.includes(auth.currentUser.uid);
+                        modalHtml = `
+                        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" id="view-modal-backdrop">
+                            <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl modal-fade-in flex flex-col max-h-[90vh]">
+                                <div class="p-6 border-b">
+                                    <div class="flex justify-between items-center">
+                                        <h2 class="text-xl md:text-2xl font-bold">${data.author}님의 ${data.date} 일기</h2>
+                                        <button class="modal-cancel-btn text-2xl text-gray-500 hover:text-gray-800">&times;</button>
+                                    </div>
+                                </div>
+                                <div class="p-6 overflow-y-auto flex-grow">
+                                    <div class="entry-content whitespace-pre-wrap">${data.content}</div>
+                                </div>
+                                <div class="p-6 border-t bg-gray-50 rounded-b-2xl">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <button id="like-btn" class="heart-btn ${liked ? 'liked' : ''} text-2xl text-gray-400"><i class="fa-solid fa-heart"></i></button>
+                                        <span id="like-count" class="text-sm text-gray-600">${data.likes || 0}명이 좋아합니다</span>
+                                    </div>
+                                    <div id="comments-section" class="space-y-2 max-h-32 overflow-y-auto mb-2"></div>
+                                    <form id="comment-form" class="flex space-x-2">
+                                        <input id="comment-input" type="text" class="flex-grow border rounded-lg px-3 py-2 text-sm" placeholder="익명 댓글 달기..." required>
+                                        <button type="submit" class="bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-amber-600">등록</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>`;
+                        break;
+                }
+                modalContainer.innerHTML = modalHtml;
+
+                const closeModal = () => { if(commentsUnsubscribe) commentsUnsubscribe(); modalContainer.innerHTML = ''; };
+                modalContainer.querySelectorAll('.modal-cancel-btn, #view-modal-backdrop').forEach(btn => btn.addEventListener('click', (e) => { if(e.target === e.currentTarget) closeModal(); }));
+
+                if (data.onConfirm) modalContainer.querySelector('#confirm-delete-btn')?.addEventListener('click', () => { data.onConfirm(); closeModal(); });
+                if (data.onSave) modalContainer.querySelector('#save-edit-btn')?.addEventListener('click', () => { data.onSave(modalContainer.querySelector('#edit-entry-div').innerHTML); closeModal(); });
+                if (data.onPassword) {
+                    const form = modalContainer.querySelector('#password-form');
+                    form?.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        const password = form.querySelector('#password-input').value;
+                        if (appState.users[data.user].password === password) { data.onPassword(); closeModal(); } 
+                        else { form.querySelector('#password-error-msg').textContent = '비밀번호가 틀렸습니다.'; }
+                    });
+                }
+                if (type === 'addUser') {
+                    modalContainer.querySelector('#add-user-form').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const newUser = modalContainer.querySelector('#new-user-name').value.trim();
+                        const password = modalContainer.querySelector('#new-user-password').value;
+                        const errorMsg = modalContainer.querySelector('#user-error-msg');
+                        if (newUser && !appState.users[newUser]) {
+                            const metadataRef = doc(db, "journalApp", "metadata");
+                            const newUsers = { ...appState.users, [newUser]: { password: password || null, hasNew: false } };
+                            await updateDoc(metadataRef, { users: newUsers });
+                            appState.activeView = newUser; localStorage.setItem('activeView', newUser); closeModal();
+                        } else { errorMsg.textContent = appState.users[newUser] ? '이미 존재하는 이름입니다.' : '이름을 입력해주세요.'; }
+                    });
+                }
+                 if (type === 'edit') {
+                    const editEntryDiv = modalContainer.querySelector('#edit-entry-div');
+                    const editPhotoInput = modalContainer.querySelector('#edit-journal-photo');
+                    let editSavedRange = null;
+
+                    editEntryDiv.addEventListener('blur', () => {
+                        const selection = window.getSelection();
+                        if (selection.rangeCount > 0) {
+                            editSavedRange = selection.getRangeAt(0);
+                        }
+                    });
+
+                    editPhotoInput.addEventListener('change', async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        loadingOverlay.style.display = 'flex';
+
+                        try {
+                            const resizedFile = await resizeImage(file, 100);
+                            const userId = auth.currentUser.uid;
+                            const filePath = `journalImages/${userId}/${Date.now()}-${file.name.replace(/\.[^/.]+$/, "")}.jpg`;
+                            const storageRef = ref(storage, filePath);
+                            
+                            await uploadBytes(storageRef, resizedFile);
+                            const url = await getDownloadURL(storageRef);
+                            
+                            const img = document.createElement('img');
+                            img.src = url;
+
+                            editEntryDiv.focus();
+                            const selection = window.getSelection();
+                            if (editSavedRange) {
+                                selection.removeAllRanges();
+                                selection.addRange(editSavedRange);
+                            }
+
+                            if (selection.getRangeAt && selection.rangeCount) {
+                                let range = selection.getRangeAt(0);
+                                range.deleteContents();
+                                range.insertNode(img);
+                                const space = document.createTextNode("\u00A0");
+                                range.insertNode(space);
+                                range.setStartAfter(space);
+                                range.collapse(true);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                            }
+                        } catch (error) {
+                            console.error("사진 업로드 실패:", error);
+                            showModal('error', { message: '사진 업로드에 실패했습니다. 파일 크기가 너무 크거나 네트워크 문제가 있을 수 있습니다.' });
+                        } finally {
+                            editPhotoInput.value = '';
+                            loadingOverlay.style.display = 'none';
                         }
                     });
                 }
-
-                const batch = writeBatch(db);
-                const scheduleData = [];
-                document.querySelectorAll('.schedule-table').forEach(table => {
-                    const roundId = parseInt(table.getAttribute('data-round-id'));
-                    table.querySelectorAll('tbody tr').forEach(row => {
-                        const players = ['player1', 'player2', 'player3', 'player4'].map(cls => row.querySelector(`.${cls}`).value.trim());
-                        const score = row.querySelector('.score').value.trim();
-                        const isFourPoint = row.querySelector('.is-four-point').checked;
-                        if (players.every(p => p)) {
-                            scheduleData.push({ 
-                                round: roundId, 
-                                players, 
-                                score, 
-                                isFourPoint,
-                                timestamp: existingTimestamps.get(roundId) || new Date().toISOString()
-                            });
-                        }
+                if (type === 'viewEntry') {
+                    const commentsRef = collection(db, "journalApp", data.author, "entries", data.id, "comments");
+                    const q = query(commentsRef, orderBy("createdAt", "asc"));
+                    commentsUnsubscribe = onSnapshot(q, (snapshot) => {
+                        const commentsSection = document.getElementById('comments-section');
+                        if (!commentsSection) return;
+                        commentsSection.innerHTML = '';
+                        snapshot.forEach(doc => {
+                            const comment = doc.data();
+                            const div = document.createElement('div'); div.className = "text-sm bg-gray-100 p-2 rounded-lg";
+                            div.innerHTML = `<span class="font-semibold mr-2">익명</span><span>${comment.text}</span>`;
+                            commentsSection.appendChild(div);
+                        });
                     });
-                });
-                
-                batch.set(scheduleDocRef, { matches: scheduleData, lastUpdated: serverTimestamp() }, { merge: true });
-
-                if (scheduleData.length > 0) {
-                    const backupTimestamp = new Date().toISOString();
-                    const backupDocRef = doc(collection(db, BASE_COLLECTION, 'data', `backups-${CURRENT_SEASON_VERSION}`), backupTimestamp);
-                    batch.set(backupDocRef, {
-                        schedule: scheduleData,
-                        timestamp: serverTimestamp()
+                    document.getElementById('comment-form').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const input = document.getElementById('comment-input');
+                        if (!input.value.trim()) return;
+                        await addDoc(commentsRef, { text: input.value, createdAt: serverTimestamp() });
+                        input.value = '';
                     });
+                    document.getElementById('like-btn').addEventListener('click', () => handleLikeClick(data.id, data.author));
                 }
-
-                await batch.commit();
-                showToast("경기 일정 저장 및 백업 완료!");
-            } catch (e) {
-                showToast(`일정 저장 실패: ${e.message || '알 수 없는 오류'}`);
-                console.error("Save error:", e);
-            } finally {
-                allSaveButtons.forEach(btn => {
-                    btn.disabled = false;
-                    if (btn.closest('.section > .save-all-btn')) {
-                        btn.textContent = '모든 데이터 저장';
-                    } else {
-                        btn.textContent = '저장하기';
-                    }
-                });
-            }
-        };
-        
-        const updateRankingTable = (rankingData, potw) => {
-            allPlayersData = rankingData; 
-            currentPotw = potw;
-
-            const potwContainer = document.getElementById('potw-container');
-            if (potw && potw.players && potw.players.length > 0 && activeView === 'current') {
-                potwContainer.innerHTML = `
-                    <div class="potw-section">
-                        <h3>🏆 이주의 선수 🏆</h3>
-                        <div class="potw-player">${potw.players.join(', ')}</div>
-                        <div class="potw-reason">${potw.reason}</div>
-                    </div>
-                `;
-            } else {
-                potwContainer.innerHTML = '';
-            }
-            
-            const playerList = document.getElementById('player-name-list');
-            if (playerList) {
-                playerList.innerHTML = allPlayersData.map(p => `<option value="${p.name}"></option>`).join('');
-            }
-
-            let genderFilteredData;
-            if (currentFilter === 'male') {
-                genderFilteredData = rankingData.filter(p => !p.isFemale);
-            } else if (currentFilter === 'female') {
-                genderFilteredData = rankingData.filter(p => p.isFemale);
-            } else {
-                genderFilteredData = [...rankingData];
-            }
-
-            genderFilteredData.sort((a, b) => {
-                const valA = a[sortKey];
-                const valB = b[sortKey];
-                let compare = 0;
-                if (sortKey === 'player') {
-                    compare = (valA || '').localeCompare(valB || '', 'ko');
-                } else if (sortKey === 'bestPartner') {
-                    const winsA = parseInt((valA || '').match(/(\d+)승/)?.[1] || 0);
-                    const winsB = parseInt((valB || '').match(/(\d+)승/)?.[1] || 0);
-                    compare = winsB - winsA;
-                } else {
-                    compare = (parseFloat(valB) || 0) - (parseFloat(valA) || 0);
-                }
-                return sortOrder === 'asc' ? -compare : compare;
-            });
-
-            genderFilteredData.forEach((player, index) => {
-                player.rank = index + 1;
-            });
-
-            const searchTerm = document.getElementById('ranking-search').value.toLowerCase();
-            const finalFilteredData = searchTerm 
-                ? genderFilteredData.filter(p => p.name.toLowerCase().includes(searchTerm))
-                : genderFilteredData;
-
-            const rankingBody = document.querySelector('#ranking-table tbody');
-            if(!rankingBody) return;
-            rankingBody.innerHTML = ''; 
-            
-            if (finalFilteredData.length === 0) {
-                 rankingBody.innerHTML = `<tr><td colspan="12">표시할 데이터가 없습니다.</td></tr>`;
-                 return;
-            }
-
-            finalFilteredData.forEach((player) => {
-                const row = rankingBody.insertRow();
-                row.innerHTML = `
-                    <td class="rank-cell">${player.rank}<span class="streak-cell ${player.streakCount > 0 ? (player.streakIsWin ? 'streak-win' : 'streak-loss') : 'streak-none'}">${player.streakCount > 0 ? (player.streakIsWin ? `W${player.streakCount}` : `L${player.streakCount}`) : '–'}</span></td>
-                    <td><input type="text" value="${player.isFemale ? `${player.name}*` : player.name}" class="ranking-player readonly" readonly></td>
-                    <td><input type="text" value="${isNaN(player.mmr) ? '1500' : Math.round(player.mmr)}" class="mmr readonly" readonly></td>
-                    <td><span class="championship-star" data-count="${player.championships || 0}">${(player.championships || 0) == 1 ? '⭐' : (player.championships || 0) > 1 ? `⭐(${player.championships})` : ''}</span></td>
-                    <td><input type="text" value="${player.wins || '0'}" class="wins readonly" readonly></td>
-                    <td><input type="text" value="${player.losses || '0'}" class="losses readonly" readonly></td>
-                    <td><input type="text" value="${player.winRate || '0'}" class="win-rate readonly" readonly></td>
-                    <td><input type="text" value="${player.avgGameDiff || '0.00'}" class="avg-game-diff readonly" readonly></td>
-                    <td><input type="text" value="${player.closeRate || '0'}" class="close-rate readonly" readonly></td>
-                    <td><input type="text" value="${player.dominantWins || '0%'}" class="dominant-wins readonly" readonly></td>
-                    <td><input type="text" value="${player.dominantLosses || '0%'}" class="dominant-losses readonly" readonly></td>
-                    <td><input type="text" value="${player.bestPartner || '-'}" class="best-partner readonly" readonly></td>
-                `;
-            });
-            rankingBody.querySelectorAll('.ranking-player').forEach(input => input.addEventListener('click', () => {
-                const playerName = encodeURIComponent(input.value.trim().replace(/\*/g, ''));
-                if (playerName) window.location.href = `h2h.html?season=${CURRENT_SEASON_VERSION}&player=${playerName}`;
-            }));
-        };
-
-        const calculateRankingFromMatches = (allMatches, initialPlayers = {}) => {
-            const constants = {
-                BASE_MMR: 1500, BASE_K: 32, WIN_BONUS: 1.2, LOSS_REDUCTION: 0.9, FOUR_POINT_MMR_MULTIPLIER: 0.6
             };
-            
-            const players = JSON.parse(JSON.stringify(initialPlayers));
-            
-            Object.values(players).forEach(p => {
-                p.mmr = constants.BASE_MMR;
-                p.wins = 0; p.losses = 0; p.totalSets = 0; 
-                p.gameDiff = 0; p.streakCount = 0; p.streakIsWin = false;
-            });
 
-            allMatches.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            // --- 렌더링 함수 ---
+            const renderTabs = () => {
+                userTabsContainer.innerHTML = '';
+                const feedTab = document.createElement('button');
+                feedTab.className = `user-tab relative flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors duration-200 ${appState.activeView === 'feed' ? 'bg-amber-500 text-white' : 'text-gray-500 hover:bg-amber-100'}`;
+                feedTab.textContent = '모두';
+                feedTab.dataset.user = 'feed';
+                userTabsContainer.appendChild(feedTab);
 
-            const updatePlayerMMR = (player, opponentTeamMMR, isWinner, partner, isFourPoint, scoreWeight) => {
-                if (!player) return 0;
-                let K = constants.BASE_K;
-                let playerMMR = player.mmr || constants.BASE_MMR;
-                const expectedWinRate = 1 / (1 + Math.pow(10, (opponentTeamMMR - playerMMR) / 400));
-                let mmrChange = K * ((isWinner ? 1 : 0) - expectedWinRate) * scoreWeight;
-
-                if (isFourPoint) mmrChange *= constants.FOUR_POINT_MMR_MULTIPLIER;
-
-                const isPlayerEffectivelyFemale = player.isFemale && player.mmr < 1850;
-                const isPartnerEffectivelyFemale = partner.isFemale && partner.mmr < 1850;
-                const isPlayerTeamMixed = (isPlayerEffectivelyFemale && !isPartnerEffectivelyFemale) || (!isPlayerEffectivelyFemale && isPartnerEffectivelyFemale);
-                
-                if (isWinner) {
-                    mmrChange *= isPlayerTeamMixed ? 1.5 : constants.WIN_BONUS;
-                } else {
-                    mmrChange *= isPlayerTeamMixed ? 0.3 : constants.LOSS_REDUCTION;
-                }
-                
-                let finalChange = Math.round(mmrChange);
-                if (isWinner && finalChange < 10) finalChange = 10;
-                
-                return finalChange;
+                Object.keys(appState.users).forEach(user => {
+                    const isActive = user === appState.activeView;
+                    const tab = document.createElement('button');
+                    tab.className = `user-tab relative flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors duration-200 ${isActive ? 'bg-amber-500 text-white' : 'text-gray-500 hover:bg-amber-100'}`;
+                    tab.textContent = user;
+                    tab.dataset.user = user;
+                    if (appState.users[user].hasNew) tab.innerHTML += `<span class="new-badge"></span>`;
+                    if (Object.keys(appState.users).length > 0) {
+                        tab.innerHTML += `<span class="delete-user-btn absolute -top-1 -right-1 text-red-500 bg-white rounded-full w-4 h-4 flex items-center justify-center text-xs"><i class="fas fa-times-circle"></i></span>`;
+                    }
+                    userTabsContainer.appendChild(tab);
+                });
+                const addUserBtn = document.createElement('button');
+                addUserBtn.id = 'add-user-btn';
+                addUserBtn.className = 'ml-2 px-3 py-1 bg-green-500 text-white rounded-full text-sm font-bold hover:bg-green-600 transition-transform hover:scale-110';
+                addUserBtn.innerHTML = '<i class="fas fa-plus"></i>';
+                userTabsContainer.appendChild(addUserBtn);
             };
-            
-            allMatches.forEach(match => {
-                const playerNames = match.players.map(p => p.replace(/\*/g, ''));
-                playerNames.forEach((name, idx) => {
-                    if (name && !players[name]) {
-                        players[name] = {
-                            name, wins: 0, losses: 0, mmr: constants.BASE_MMR, championships: 0, 
-                            totalSets: 0, gameDiff: 0, isFemale: match.players[idx].includes('*'), 
-                            streakCount: 0, streakIsWin: false
-                        };
-                    }
-                });
+            const updateTitleAndForm = () => {
+                const isFeed = appState.activeView === 'feed';
 
-                const [p1, p2, p3, p4] = playerNames.map(name => players[name]);
-                if (!p1 || !p2 || !p3 || !p4) return;
-
-                let team1MMR = (p1.mmr + p2.mmr) / 2;
-                let team2MMR = (p3.mmr + p4.mmr) / 2;
-                
-                if (!match.score || !match.score.includes('-')) return;
-                const [s1, s2] = match.score.split('-').map(Number);
-                const isTeam1Winner = s1 > s2;
-                const gameDiffVal = Math.abs(s1 - s2);
-                const scoreWeight = 0.8 + (gameDiffVal / 6) * 0.7;
-
-                const mmrChanges = [
-                    updatePlayerMMR(p1, team2MMR, isTeam1Winner, p2, match.isFourPoint, scoreWeight),
-                    updatePlayerMMR(p2, team2MMR, isTeam1Winner, p1, match.isFourPoint, scoreWeight),
-                    updatePlayerMMR(p3, team1MMR, !isTeam1Winner, p4, match.isFourPoint, scoreWeight),
-                    updatePlayerMMR(p4, team1MMR, !isTeam1Winner, p3, match.isFourPoint, scoreWeight)
-                ];
-
-                const updatePlayerStats = (name, isWinner, gameDiffVal, mmrChange) => {
-                    const p = players[name];
-                    if (!p) return;
-                    p.totalSets = (p.totalSets || 0) + 1;
-                    p.gameDiff = (p.gameDiff || 0) + (isWinner ? gameDiffVal : -gameDiffVal);
-                    p.mmr += mmrChange;
-                    if (isWinner) {
-                        p.wins = (p.wins || 0) + 1;
-                        p.streakCount = p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
-                        p.streakIsWin = true;
-                    } else {
-                        p.losses = (p.losses || 0) + 1;
-                        p.streakCount = !p.streakIsWin ? (p.streakCount || 0) + 1 : 1;
-                        p.streakIsWin = false;
-                    }
-                };
-
-                updatePlayerStats(playerNames[0], isTeam1Winner, gameDiffVal, mmrChanges[0]);
-                updatePlayerStats(playerNames[1], isTeam1Winner, gameDiffVal, mmrChanges[1]);
-                updatePlayerStats(playerNames[2], !isTeam1Winner, gameDiffVal, mmrChanges[2]);
-                updatePlayerStats(playerNames[3], !isTeam1Winner, gameDiffVal, mmrChanges[3]);
-            });
-
-            const allCalculatedPlayers = Object.values(players);
-            const partnerStats = {}, roundWinsAll = {}, derivedStats = {};
-
-            allMatches.forEach(match => {
-                if (!match.score || !match.score.includes('-')) return;
-                const playerNames = match.players.map(p => p.replace(/\*/g, ''));
-                const [s1, s2] = match.score.split('-').map(Number);
-                const actual1 = s1 > s2;
-                const gameDiffVal = Math.abs(s1 - s2);
-
-                const updatePartner = (p1, p2, isWin) => {
-                    if (!p1 || !p2) return;
-                    if (!partnerStats[p1]) partnerStats[p1] = {};
-                    if (!partnerStats[p1][p2]) partnerStats[p1][p2] = { wins: 0, losses: 0, matches: 0 };
-                    partnerStats[p1][p2].matches++;
-                    if(isWin) partnerStats[p1][p2].wins++; else partnerStats[p1][p2].losses++;
-                };
-                updatePartner(playerNames[0], playerNames[1], actual1);
-                updatePartner(playerNames[1], playerNames[0], actual1);
-                updatePartner(playerNames[2], playerNames[3], !actual1);
-                updatePartner(playerNames[3], playerNames[2], !actual1);
-
-                if (!match.isFourPoint) {
-                    const winners = actual1 ? [playerNames[0], playerNames[1]] : [playerNames[2], playerNames[3]];
-                    if (!roundWinsAll[match.round]) roundWinsAll[match.round] = {};
-                    winners.forEach(winner => {
-                        if(winner) roundWinsAll[match.round][winner] = (roundWinsAll[match.round][winner] || 0) + 1
-                    });
+                if (isFeed) {
+                    mainHeader.style.display = 'block';
+                    mainTitle.textContent = '모두의 감사일기';
+                    mainSubtitle.textContent = '다른 사람들의 감사한 하루를 둘러보세요.';
+                    entriesTitle.textContent = '모두의 기록들';
+                    journalForm.style.display = 'none';
+                    quoteContainer.style.display = 'none';
+                    daysCounter.style.display = 'none';
+                } else {
+                    mainHeader.style.display = 'block';
+                    mainTitle.textContent = `${appState.activeView || ''}의 감사 일기장`;
+                    mainSubtitle.textContent = '감사했던 일들을 기록하세요.';
+                    entriesTitle.textContent = `${appState.activeView || ''}님의 기록들`;
+                    quoteContainer.style.display = 'block';
+                    journalForm.style.display = 'block';
                 }
-
-                playerNames.forEach((name, index) => {
-                    if (!name) return;
-                    if (!derivedStats[name]) derivedStats[name] = { totalSets: 0, closeSets: 0, dominantWins: 0, dominantLosses: 0 };
-                    const stats = derivedStats[name];
-                    stats.totalSets++;
-                    if (gameDiffVal <= 2) stats.closeSets++;
-                    const isWinner = (index < 2 && actual1) || (index >= 2 && !actual1);
-                    if (gameDiffVal >= 5) {
-                        if (isWinner) stats.dominantWins++; else stats.dominantLosses++;
-                    }
-                });
-            });
-
-            allCalculatedPlayers.forEach(p => {
-                p.championships = Object.values(roundWinsAll).filter(round => round[p.name] && round[p.name] >= 3).length;
-                
-                let bestPartner = { name: '-', wins: 0 };
-                if (partnerStats[p.name]) {
-                    for (const partnerName in partnerStats[p.name]) {
-                        const stats = partnerStats[p.name][partnerName];
-                        if (stats.wins > bestPartner.wins) bestPartner = { name: partnerName, wins: stats.wins };
-                    }
-                }
-                p.bestPartner = bestPartner.name === '-' ? '데이터 부족' : `${bestPartner.name} (${bestPartner.wins}승)`;
-                
-                const totalGames = p.wins + p.losses;
-                p.winRate = totalGames > 0 ? Math.round((p.wins / totalGames) * 100) : 0;
-                p.avgGameDiff = p.totalSets > 0 ? (p.gameDiff / p.totalSets).toFixed(2) : '0.00';
-                
-                const dStats = derivedStats[p.name] || { totalSets: 0, closeSets: 0, dominantWins: 0, dominantLosses: 0 };
-                p.closeRate = dStats.totalSets > 0 ? Math.round((dStats.closeSets / dStats.totalSets) * 100) : 0;
-                p.dominantWins = dStats.totalSets > 0 ? `${Math.round((dStats.dominantWins / dStats.totalSets) * 100)}%(${dStats.dominantWins}승)` : '0%';
-                p.dominantLosses = dStats.totalSets > 0 ? `${Math.round((dStats.dominantLosses / dStats.totalSets) * 100)}%(${dStats.dominantLosses}패)` : '0%';
-            });
-
-            return allCalculatedPlayers;
-        }
-
-        const updateRanking = async () => {
-            if (activeView !== 'current') {
-                showToast('현재 시즌 탭에서만 순위를 업데이트할 수 있습니다.');
-                return;
-            }
-            const updateRankingBtn = document.getElementById('update-ranking');
-            updateRankingBtn.disabled = true;
-            updateRankingBtn.textContent = '계산 중...';
-            showToast('전체 순위를 다시 계산합니다. 잠시만 기다려주세요...');
-
-            return new Promise(async (resolve) => {
-                const scheduleDoc = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION));
-                const allMatchesFromHTML = scheduleDoc.exists() ? scheduleDoc.data().matches : [];
-
-                if (allMatchesFromHTML.length === 0) {
-                    showToast("계산할 경기 기록이 없습니다.");
-                    updateRankingBtn.disabled = false;
-                    updateRankingBtn.textContent = '순위 업데이트';
-                    resolve();
-                    return;
-                }
-
-                const allCalculatedPlayers = calculateRankingFromMatches(allMatchesFromHTML);
-                const latestProcessedRound = Math.max(...allMatchesFromHTML.map(m => m.round), 0);
-                
-                try {
-                    const batch = writeBatch(db);
-                    batch.set(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION), { 
-                        players: allCalculatedPlayers, lastProcessedRound: latestProcessedRound, lastUpdated: serverTimestamp() 
-                    });
+            };
+            const renderEntries = () => {
+                entriesList.innerHTML = '';
+                if (appState.entries.length === 0) {
+                    entriesList.appendChild(emptyMessage);
+                    emptyMessage.style.display = 'block';
+                    daysCounter.style.display = 'none';
+                } else {
+                    daysCounter.style.display = 'block';
+                    const firstEntryDateStr = appState.entries[appState.entries.length - 1].date;
+                    const [year, month, day] = firstEntryDateStr.split('-').map(Number);
+                    const firstDate = new Date(year, month - 1, day);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    firstDate.setHours(0,0,0,0);
                     
-                    const historyTimestamp = new Date().toISOString();
-                    const newHistoryDocRef = doc(collection(db, BASE_COLLECTION, 'data', `rankingHistory-${CURRENT_SEASON_VERSION}`), historyTimestamp);
-                    const newHistoryData = {
-                        createdAt: serverTimestamp(),
-                        ...Object.fromEntries(allCalculatedPlayers.map(p => [p.name.replace(/\./g, '_'), p.mmr]))
-                    };
-                    batch.set(newHistoryDocRef, newHistoryData);
+                    const diffTime = today.getTime() - firstDate.getTime();
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                    daysCounter.innerHTML = `🧡 ${diffDays}일째 감사 기록중 🧡`;
 
-                    await batch.commit();
-                    showToast('순위 업데이트 및 저장 완료!');
-                } catch (e) {
-                    showToast(`랭킹 저장 실패: ${e.message || '알 수 없는 오류'}`);
-                } finally {
-                    updateRankingBtn.disabled = false;
-                    updateRankingBtn.textContent = '순위 업데이트';
-                    resolve();
-                }
-            });
-        };
+                    emptyMessage.style.display = 'none';
+                    appState.entries.forEach(entry => {
+                        const entryElement = document.createElement('div');
+                        entryElement.className = 'bg-amber-50 p-4 rounded-xl border border-amber-200';
+                        entryElement.dataset.id = entry.id;
+                        const date = new Date(entry.date);
+                        const adjustedDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
+                        const formattedDate = adjustedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = entry.content;
+                        const textPreview = tempDiv.textContent || tempDiv.innerText || "";
+                        const liked = entry.likedBy && entry.likedBy.includes(auth.currentUser.uid);
 
-        const downloadCSV = () => {
-            let rankingCSV = '\uFEFF순위,선수,MMR,우승,승,패,승률(%),평균 게임 득실,접전률(%),압도승률(%),압도패률(%),최고 파트너\n';
-            document.querySelectorAll('#ranking-table tbody tr').forEach(row => {
-                const rawName = row.querySelector('.ranking-player').value.trim();
-                const player = rawName.replace(/\*/g, '');
-                if (player) {
-                    const rank = row.cells[0].textContent.split(' ')[0];
-                    const mmr = row.querySelector('.mmr').value;
-                    const championships = row.querySelector('.championship-star')?.dataset.count || '0';
-                    const wins = row.querySelector('.wins').value;
-                    const losses = row.querySelector('.losses').value;
-                    const winRate = row.querySelector('.win-rate').value;
-                    const avgGameDiff = row.querySelector('.avg-game-diff').value;
-                    const closeRate = row.querySelector('.close-rate').value;
-                    const dominantWins = row.querySelector('.dominant-wins').value.replace('%', '').replace('승', '');
-                    const dominantLosses = row.querySelector('.dominant-losses').value.replace('%', '').replace('패', '');
-                    const bestPartner = row.querySelector('.best-partner').value;
-                    rankingCSV += `${rank},"${player}",${mmr},${championships},${wins},${losses},${winRate},${avgGameDiff},${closeRate},${dominantWins},${dominantLosses},"${bestPartner}"\n`;
-                }
-            });
-            const blob = new Blob([rankingCSV], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `rankings_${activeView}.csv`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        };
-
-        const openPopup = (id) => {
-            document.getElementById(id).classList.add('show');
-            document.getElementById('overlay').classList.add('show');
-        };
-
-        const closePopup = (id) => {
-            document.getElementById(id).classList.remove('show');
-            document.getElementById('overlay').classList.remove('show');
-        };
-
-        const populatePlayerManagementPopup = () => {
-            const listContainer = document.getElementById('player-management-list');
-            listContainer.innerHTML = '';
-            const sortedPlayers = [...allPlayersData].sort((a,b) => a.name.localeCompare(b.name, 'ko'));
-
-            sortedPlayers.forEach(player => {
-                const item = document.createElement('div');
-                item.className = 'player-management-item';
-                item.dataset.playerName = player.name;
-                item.innerHTML = `
-                    <span>${player.name}</span>
-                    <div class="controls">
-                        <label><input type="checkbox" class="is-female-checkbox" ${player.isFemale ? 'checked' : ''}> 여성</label>
-                        <button class="btn danger delete-player-btn">삭제</button>
-                    </div>
-                `;
-                listContainer.appendChild(item);
-            });
-
-            listContainer.querySelectorAll('.delete-player-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.target.closest('.player-management-item').remove();
-                });
-            });
-        };
-
-        const savePlayerChanges = async () => {
-            if (activeView !== 'current') {
-                showToast('현재 시즌 탭에서만 선수 정보를 변경할 수 있습니다.');
-                return;
-            }
-            const updatedPlayers = [];
-            document.querySelectorAll('#player-management-list .player-management-item').forEach(item => {
-                const name = item.dataset.playerName;
-                const originalPlayer = allPlayersData.find(p => p.name === name);
-                if (originalPlayer) {
-                    const isFemale = item.querySelector('.is-female-checkbox').checked;
-                    updatedPlayers.push({ ...originalPlayer, isFemale });
-                }
-            });
-
-            try {
-                const rankingsRef = doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION);
-                await setDoc(rankingsRef, { players: updatedPlayers }, { merge: true });
-                showToast('선수 정보 변경 완료! 순위를 다시 계산합니다.');
-                closePopup('player-management-popup');
-                await updateRanking();
-            } catch (error) {
-                showToast(`선수 정보 저장 실패: ${error.message}`);
-            }
-        };
-
-        async function restoreScheduleFromBackup(seasonVersion, isInitialLoad = false) {
-            try {
-                const backupCol = collection(db, BASE_COLLECTION, 'data', `backups-${seasonVersion}`);
-                const q = query(backupCol, orderBy('timestamp', 'desc'), limit(1));
-                const backupSnap = await getDocs(q);
-
-                if (backupSnap.empty) {
-                    if (!isInitialLoad) showToast("복구할 백업 데이터가 없습니다.");
-                    return null;
-                }
-
-                const latestBackup = backupSnap.docs[0].data();
-                const scheduleData = latestBackup.schedule;
-
-                if (scheduleData && scheduleData.length > 0) {
-                    await setDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', seasonVersion), { matches: scheduleData, lastUpdated: serverTimestamp() });
-                    if (!isInitialLoad) showToast("최신 백업에서 경기 기록을 복구했습니다.");
-                    return scheduleData;
-                }
-                return null;
-            } catch (error) {
-                console.error("백업 복구 실패:", error);
-                if (!isInitialLoad) showToast(`백업 데이터베이스 읽기 실패: ${error.message}`);
-                return null;
-            }
-        }
-
-        function processAndRenderSchedule(scheduleData) {
-            const savedRounds = new Map();
-            const roundWins = {};
-
-            scheduleData.forEach(match => {
-                if (!savedRounds.has(match.round)) {
-                    savedRounds.set(match.round, { timestamp: match.timestamp, champions: [], matches: [] });
-                }
-                savedRounds.get(match.round).matches.push(match);
-            });
-
-            scheduleData.forEach(match => {
-                const roundId = match.round;
-                if (match.score && /^\d+-\d+$/.test(match.score) && !match.isFourPoint) {
-                    const [score1, score2] = match.score.split('-').map(Number);
-                    const winners = score1 > score2 ? [match.players[0], match.players[1]] : [match.players[2], match.players[3]];
-                    winners.forEach(player => {
-                        if (!player) return;
-                        if (!roundWins[roundId]) roundWins[roundId] = {};
-                        const cleanPlayerName = player.replace(/\*/g, '');
-                        roundWins[roundId][player] = (roundWins[roundId][player] || 0) + 1;
-                        if (roundWins[roundId][player] === 3 && !savedRounds.get(roundId).champions.includes(cleanPlayerName)) {
-                            savedRounds.get(roundId).champions.push(cleanPlayerName);
-                        }
+                        entryElement.innerHTML = `
+                            <div class="flex justify-between items-start mb-2">
+                                <p class="font-semibold text-amber-800">${formattedDate}</p>
+                                <div class="flex space-x-2">
+                                    <button class="edit-btn text-gray-400 hover:text-green-600 text-xs font-bold py-1 px-2 rounded">수정</button>
+                                    <button class="delete-btn text-gray-400 hover:text-red-500 text-xs font-bold py-1 px-2 rounded">삭제</button>
+                                </div>
+                            </div>
+                            <div class="entry-content-clickable cursor-pointer">
+                                <p class="text-gray-700 whitespace-pre-wrap truncate">${textPreview}</p>
+                            </div>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 mt-2 pt-2 border-t border-amber-100">
+                                <button class="like-btn heart-btn ${liked ? 'liked' : ''} flex items-center space-x-1 hover:text-red-500">
+                                    <i class="fa-solid fa-heart"></i> 
+                                    <span>${entry.likes || 0}</span>
+                                </button>
+                                <button class="comment-btn flex items-center space-x-1 hover:text-blue-500">
+                                    <i class="fa-regular fa-comment"></i>
+                                    <span>댓글</span>
+                                </button>
+                            </div>`;
+                        entriesList.appendChild(entryElement);
                     });
                 }
-            });
-            
-            createScheduleRounds(savedRounds);
-            
-            document.querySelectorAll('.schedule-table').forEach(table => {
-                const roundId = table.getAttribute('data-round-id');
-                const matches = scheduleData.filter(m => m.round == roundId);
-                table.querySelectorAll('tbody tr').forEach((row, index) => {
-                    const match = matches[index];
-                    if (match) {
-                        ['player1', 'player2', 'player3', 'player4'].forEach((cls, i) => row.querySelector(`.${cls}`).value = match.players[i] || '');
-                        row.querySelector('.score').value = match.score || '';
-                        row.querySelector('.is-four-point').checked = match.isFourPoint || false;
-                    }
-                });
-            });
-        }
-
-        const loadViewData = async () => {
-            if (scheduleUnsubscribe) scheduleUnsubscribe();
-            if (rankingUnsubscribe) rankingUnsubscribe();
-
-            updateRankingTitleAndCountdown(activeView);
-            const scheduleSection = document.getElementById('schedule-section');
-            scheduleSection.style.display = (activeView === 'current') ? 'block' : 'none';
-
-            if (activeView === 'current') {
-                scheduleUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION), (docSnap) => {
-                    const scheduleData = (docSnap.exists() && docSnap.data().matches) ? docSnap.data().matches : [];
-                    processAndRenderSchedule(scheduleData);
-                });
-                rankingUnsubscribe = onSnapshot(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION), (docSnap) => {
-                    const data = docSnap.exists() ? docSnap.data() : {};
-                    updateRankingTable(data.players || [], data.potw || null);
-                });
-            } else if (activeView === 'previous') {
-                const rankingsDoc = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION));
-                const data = rankingsDoc.exists() ? rankingsDoc.data() : {};
-                updateRankingTable(data.players || [], data.potw || null);
-            } else if (activeView === 'alltime') {
-                showToast('통산 기록을 불러오는 중입니다...');
-                
-                const summerScheduleSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', PREVIOUS_SEASON_VERSION));
-                const fallScheduleSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'schedule', CURRENT_SEASON_VERSION));
-
-                const summerMatches = summerScheduleSnap.exists() ? summerScheduleSnap.data().matches : [];
-                const fallMatches = fallScheduleSnap.exists() ? fallScheduleSnap.data().matches : [];
-                const allMatches = [...summerMatches, ...fallMatches];
-
-                const summerRankingSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', PREVIOUS_SEASON_VERSION));
-                const fallRankingSnap = await getDoc(doc(db, BASE_COLLECTION, 'data', 'rankings', CURRENT_SEASON_VERSION));
-                const summerPlayers = summerRankingSnap.exists() ? summerRankingSnap.data().players : [];
-                const fallPlayers = fallRankingSnap.exists() ? fallRankingSnap.data().players : [];
-                
-                const allPlayersMap = {};
-                [...summerPlayers, ...fallPlayers].forEach(p => {
-                    if (p && p.name) {
-                       allPlayersMap[p.name] = p;
-                    }
-                });
-
-                if (allMatches.length > 0) {
-                    const finalRankings = calculateRankingFromMatches(allMatches, allPlayersMap);
-                    updateRankingTable(finalRankings, null);
+            };
+            const renderFeedEntries = () => {
+                daysCounter.style.display = 'none';
+                entriesList.innerHTML = '';
+                if (appState.entries.length === 0) {
+                    entriesList.appendChild(emptyMessage);
+                    emptyMessage.style.display = 'block';
                 } else {
-                    updateRankingTable([], null);
+                    emptyMessage.style.display = 'none';
+                    appState.entries.forEach(entry => {
+                        const entryElement = document.createElement('div');
+                        entryElement.className = 'bg-amber-50 p-4 rounded-xl border border-amber-200';
+                        entryElement.dataset.id = entry.id;
+                        entryElement.dataset.author = entry.author;
+                        const date = entry.createdAt.toDate();
+                        const formattedDate = date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = entry.content;
+                        const textPreview = tempDiv.textContent || tempDiv.innerText || "";
+                        const liked = entry.likedBy && entry.likedBy.includes(auth.currentUser.uid);
+
+                        entryElement.innerHTML = `
+                            <div class="flex justify-between items-start mb-2">
+                                <p class="font-semibold text-amber-800">${entry.author}님의 일기</p>
+                                <span class="text-xs text-gray-500">${formattedDate}</span>
+                            </div>
+                            <div class="entry-content-clickable cursor-pointer">
+                                <p class="text-gray-700 whitespace-pre-wrap truncate">${textPreview}</p>
+                            </div>
+                            <div class="flex items-center space-x-4 text-sm text-gray-500 mt-2 pt-2 border-t border-amber-100">
+                                <button class="like-btn heart-btn ${liked ? 'liked' : ''} flex items-center space-x-1 hover:text-red-500">
+                                    <i class="fa-solid fa-heart"></i> 
+                                    <span>${entry.likes || 0}</span>
+                                </button>
+                                <button class="comment-btn flex items-center space-x-1 hover:text-blue-500">
+                                    <i class="fa-regular fa-comment"></i>
+                                    <span>댓글</span>
+                                </button>
+                            </div>`;
+                        entriesList.appendChild(entryElement);
+                    });
                 }
+            };
+            
+            // --- 이미지 리사이즈 로직 (수정됨) ---
+            async function resizeImage(file, maxSizeInKB = 100) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = async () => {
+                            try {
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+                                
+                                let width = img.width;
+                                let height = img.height;
+                                const maxDim = 1024; // Max width/height
+
+                                if (width > height) {
+                                    if (width > maxDim) {
+                                        height *= maxDim / width;
+                                        width = maxDim;
+                                    }
+                                } else {
+                                    if (height > maxDim) {
+                                        width *= maxDim / height;
+                                        height = maxDim;
+                                    }
+                                }
+                                
+                                canvas.width = width;
+                                canvas.height = height;
+                                ctx.drawImage(img, 0, 0, width, height);
+
+                                let quality = 0.9;
+                                let blob;
+                                
+                                for (; quality >= 0.1; quality -= 0.1) {
+                                    blob = await new Promise(res => canvas.toBlob(b => res(b), 'image/jpeg', quality));
+                                    if (blob && blob.size / 1024 <= maxSizeInKB) {
+                                        break; 
+                                    }
+                                }
+
+                                if (!blob) {
+                                   throw new Error("Canvas to Blob conversion failed");
+                                }
+                                
+                                resolve(blob);
+                            } catch (err) {
+                                reject(err);
+                            }
+                        };
+                        img.onerror = () => reject(new Error('Failed to load image for resizing.'));
+                        img.src = e.target.result;
+                    };
+                    reader.onerror = () => reject(new Error('Failed to read file.'));
+                    reader.readAsDataURL(file);
+                });
             }
-        };
 
-        const setupInputListeners = () => {
-            document.addEventListener('click', function(e) {
-                if (e.target.classList.contains('save-all-btn')) {
-                    e.preventDefault();
-                    e.target.blur();
-                    saveAllData();
-                }
-            });
-
-            document.getElementById('update-ranking')?.addEventListener('click', (e) => {
-                e.preventDefault(); e.currentTarget.blur(); updateRanking();
-            });
-            document.getElementById('download-csv')?.addEventListener('click', downloadCSV);
-            document.getElementById('how-to-use-btn')?.addEventListener('click', () => openPopup('info-popup'));
-            
-            document.querySelectorAll('.close-btn').forEach(btn => {
-                btn.addEventListener('click', () => closePopup(btn.dataset.target));
-            });
-
-            document.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentFilter = btn.dataset.filter;
-                updateRankingTable(allPlayersData, currentPotw);
-            }));
-            document.querySelectorAll('#ranking-table thead th[data-sort]').forEach(th => th.addEventListener('click', () => {
-                const newSortKey = th.dataset.sort;
-                sortOrder = (sortKey === newSortKey && sortOrder === 'desc') ? 'asc' : 'desc';
-                sortKey = newSortKey;
-                updateRankingTable(allPlayersData, currentPotw);
-            }));
-            document.getElementById('theme-toggle')?.addEventListener('click', () => {
-                const currentTheme = document.documentElement.getAttribute('data-theme');
-                applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
-            });
-            document.getElementById('ranking-search')?.addEventListener('input', () => updateRankingTable(allPlayersData, currentPotw));
-            
-            document.getElementById('restore-backup-btn')?.addEventListener('click', async (e) => {
-                e.preventDefault();
-                if (activeView !== 'current') {
-                    showToast('현재 시즌 탭에서만 복구할 수 있습니다.');
-                    return;
-                }
-                const btn = e.target;
-                btn.disabled = true;
-                btn.textContent = '복구 중...';
-                showToast("최신 백업 데이터 복구를 시도합니다...");
+            // --- 좋아요 핸들러 ---
+            const handleLikeClick = async (entryId, author) => {
+                const entryRef = doc(db, "journalApp", author, "entries", entryId);
+                const feedRef = doc(db, "feedEntries", entryId);
                 try {
-                    const restoredData = await restoreScheduleFromBackup(CURRENT_SEASON_VERSION);
-                    if (restoredData) {
-                        showToast("백업 복구 완료! 이제 순위를 다시 계산합니다.");
-                        await updateRanking();
-                    } else {
-                        showToast("백업 데이터가 없거나 복구에 실패했습니다.");
-                    }
+                    await runTransaction(db, async (transaction) => {
+                        const entryDoc = await transaction.get(entryRef);
+                        if (!entryDoc.exists()) throw "문서가 존재하지 않습니다!";
+                        const likedBy = entryDoc.data().likedBy || [];
+                        const uid = auth.currentUser.uid;
+                        const newLikedBy = likedBy.includes(uid) ? likedBy.filter(id => id !== uid) : [...likedBy, uid];
+                        const newLikes = newLikedBy.length;
+                        transaction.update(entryRef, { likes: newLikes, likedBy: newLikedBy });
+                        transaction.update(feedRef, { likes: newLikes, likedBy: newLikedBy });
+                    });
                 } catch (error) {
-                    showToast(`복구 프로세스 전체 실패: ${error.message}`);
-                } finally {
-                    btn.disabled = false;
-                    btn.textContent = '💾 오류 수정 (백업 복구)';
+                    console.error("좋아요 처리 실패: ", error);
                 }
-            });
-
-            document.getElementById('manage-players-btn').addEventListener('click', () => {
-                const passwordInput = document.getElementById('password-input');
-                passwordInput.value = '';
-                openPopup('password-popup');
-                setTimeout(() => passwordInput.focus(), 100);
-            });
-
-            const submitPassword = () => {
-                const passwordInput = document.getElementById('password-input');
-                if (passwordInput.value === '0718') {
-                    closePopup('password-popup');
-                    populatePlayerManagementPopup();
-                    openPopup('player-management-popup');
-                } else {
-                    showToast('비밀번호가 틀렸습니다.');
-                    passwordInput.focus();
-                }
-                passwordInput.value = '';
             };
 
-            document.getElementById('password-submit-btn').addEventListener('click', submitPassword);
-            document.getElementById('password-input').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    submitPassword();
-                }
-            });
+            // --- 이모티콘 설정 ---
+            function setupEmoticons() {
+                const emoticonBar = document.getElementById('emoticon-bar');
+                const emoticons = ['😊', '🥰', '👍', '🙏', '🎉', '☀️', '❤️', '😂', '😭', '😮'];
+                
+                emoticonBar.innerHTML = '';
+                emoticons.forEach(emo => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'text-2xl hover:scale-125 transition-transform focus:outline-none';
+                    button.textContent = emo;
+                    button.addEventListener('click', () => {
+                        journalEntry.focus();
+                        const selection = window.getSelection();
+                        
+                        if (savedRange) {
+                            selection.removeAllRanges();
+                            selection.addRange(savedRange);
+                        }
 
-            document.getElementById('save-player-changes-btn').addEventListener('click', savePlayerChanges);
+                        if (selection.getRangeAt && selection.rangeCount) {
+                            const range = selection.getRangeAt(0);
+                            range.deleteContents();
+                            const textNode = document.createTextNode(emo);
+                            range.insertNode(textNode);
+                            
+                            const spaceNode = document.createTextNode('\u00A0');
+                            range.setStartAfter(textNode);
+                            range.insertNode(spaceNode);
+                            range.setStartAfter(spaceNode);
+                            range.collapse(true);
 
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    activeView = btn.dataset.view;
-                    loadViewData();
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            
+                            savedRange = range;
+                        }
+                    });
+                    emoticonBar.appendChild(button);
                 });
-            });
-        };
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            setupInputListeners();
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            applyTheme(savedTheme);
-
-            // UI 뼈대를 먼저 렌더링
-            createScheduleRounds();
-            updateRankingTable([], null);
-            updateRankingTitleAndCountdown(activeView);
-
-            document.getElementById('dashboard-link').href = `dash.html?season=${CURRENT_SEASON_VERSION}`;
-            document.getElementById('hof-link').href = `hall_of_fame.html?season=${CURRENT_SEASON_VERSION}`;
-            document.getElementById('partner-link').href = `partner.html?season=${CURRENT_SEASON_VERSION}`;
-            
-            if (app) {
-                try {
-                    await signInAnonymously(auth); // 인증이 완료될 때까지 기다림
-                    console.log("Signed in anonymously.");
-                    loadViewData(); // 인증 후 데이터 로드 시작
-                } catch (error) {
-                    console.error("Anonymous sign-in failed:", error);
-                    showToast("DB 인증에 실패했습니다.");
-                }
-            } else {
-                showToast("DB 연결 없음!");
             }
+
+
+            // --- 이벤트 리스너 ---
+            document.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.tagName === 'IMG' && target.closest('.editable-div')) { makeImageResizable(target); } 
+                else if (!target.closest('.resizable-wrapper')) { document.querySelectorAll('.resizable-wrapper').forEach(wrapper => { wrapper.parentNode.insertBefore(wrapper.firstChild, wrapper); wrapper.parentNode.removeChild(wrapper); }); }
+            });
+
+            journalEntry.addEventListener('blur', () => { const selection = window.getSelection(); if (selection.rangeCount > 0) savedRange = selection.getRangeAt(0); });
+
+            journalPhoto.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                loadingOverlay.style.display = 'flex';
+
+                try {
+                    const resizedFile = await resizeImage(file, 100);
+                    const userId = auth.currentUser.uid;
+                    const filePath = `journalImages/${userId}/${Date.now()}-${file.name.replace(/\.[^/.]+$/, "")}.jpg`;
+                    const storageRef = ref(storage, filePath);
+                    
+                    await uploadBytes(storageRef, resizedFile);
+
+                    const url = await getDownloadURL(storageRef);
+                    const img = document.createElement('img');
+                    img.src = url;
+
+                    journalEntry.focus();
+                    const selection = window.getSelection();
+                    if (savedRange) {
+                        selection.removeAllRanges();
+                        selection.addRange(savedRange);
+                    }
+
+                    if (selection.getRangeAt && selection.rangeCount) {
+                        let range = selection.getRangeAt(0);
+                        range.deleteContents();
+                        range.insertNode(img);
+                        const space = document.createTextNode("\u00A0");
+                        range.insertNode(space);
+                        range.setStartAfter(space);
+                        range.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    }
+                } catch (error) {
+                    console.error("사진 업로드 실패:", error);
+                    showModal('error', { message: '사진 업로드에 실패했습니다. 파일 크기가 너무 크거나 네트워크 문제가 있을 수 있습니다.' });
+                } finally {
+                    journalPhoto.value = '';
+                    loadingOverlay.style.display = 'none';
+                }
+            });
+
+            userTabsContainer.addEventListener('click', async (e) => {
+                const tab = e.target.closest('.user-tab');
+                if (tab) {
+                    const user = tab.dataset.user;
+                    const switchView = (targetUser) => {
+                        if (appState.activeView === targetUser) return;
+                        appState.activeView = targetUser; 
+                        localStorage.setItem('activeView', targetUser);
+                        renderUI();
+                    };
+
+                    if (e.target.closest('.delete-user-btn')) {
+                        const action = async () => {
+                            loadingOverlay.style.display = 'flex';
+                            const entriesRef = collection(db, "journalApp", user, "entries");
+                            const entriesSnapshot = await getDocs(entriesRef);
+                            const batch = writeBatch(db);
+                            entriesSnapshot.forEach((doc) => {
+                                batch.delete(doc.ref);
+                                batch.delete(doc(db, "feedEntries", doc.id));
+                            });
+                            await batch.commit();
+                            const metadataRef = doc(db, "journalApp", "metadata");
+                            const newUsers = { ...appState.users }; delete newUsers[user];
+                            await updateDoc(metadataRef, { users: newUsers });
+                            
+                            if (appState.primaryUser === user) {
+                                const newPrimary = Object.keys(newUsers).length > 0 ? Object.keys(newUsers)[0] : null;
+                                localStorage.setItem('primaryUser', newPrimary);
+                                appState.primaryUser = newPrimary;
+                            }
+                            if (appState.activeView === user) {
+                                const newActive = appState.primaryUser || 'feed';
+                                localStorage.setItem('activeView', newActive);
+                                appState.activeView = newActive;
+                            }
+                            loadingOverlay.style.display = 'none';
+                        };
+                        if (appState.users[user].password) showModal('password', { user: user, onPassword: action });
+                        else showModal('confirmDelete', { message: `'${user}' 사용자의 모든 일기가 사라집니다.`, onConfirm: action });
+                    } else {
+                        const needsPassword = user !== 'feed' && user !== appState.primaryUser && appState.users[user].password;
+                        if (needsPassword && !unlockedUsers.has(user)) {
+                             showModal('password', { 
+                                 user: user, 
+                                 onPassword: () => {
+                                     unlockedUsers.add(user);
+                                     switchView(user);
+                                 } 
+                             });
+                        } else {
+                            switchView(user);
+                        }
+                    }
+                }
+                if (e.target.closest('#add-user-btn')) showModal('addUser');
+            });
+
+            journalForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const content = journalEntry.innerHTML;
+                if (!content.trim() || journalEntry.textContent.trim() === '' && !journalEntry.querySelector('img')) { return; }
+                loadingOverlay.style.display = 'flex';
+                // 글쓰기는 항상 primaryUser에게 저장
+                const entriesRef = collection(db, "journalApp", appState.primaryUser, "entries");
+                const newEntryData = { date: journalDate.value, content: content, createdAt: serverTimestamp(), likes: 0, likedBy: [] };
+                const docRef = await addDoc(entriesRef, newEntryData);
+                
+                const feedRef = doc(db, "feedEntries", docRef.id);
+                await setDoc(feedRef, { ...newEntryData, author: appState.primaryUser });
+
+                const metadataRef = doc(db, "journalApp", "metadata");
+                const updatedUsers = { ...appState.users };
+                Object.keys(updatedUsers).forEach(user => { if (user !== appState.primaryUser) updatedUsers[user].hasNew = true; });
+                await updateDoc(metadataRef, { users: updatedUsers });
+                journalEntry.innerHTML = ''; 
+                setToday();
+                loadingOverlay.style.display = 'none';
+            });
+
+            entriesList.addEventListener('click', (e) => {
+                const entryElement = e.target.closest('div[data-id]');
+                if (!entryElement) return;
+                const entryId = entryElement.dataset.id;
+                const author = entryElement.dataset.author || appState.activeView;
+                const entryData = appState.entries.find(entry => entry.id === entryId);
+
+                const performAction = (action) => { if (appState.activeView !== 'feed' && appState.users[author].password) showModal('password', { user: author, onPassword: action }); else action(); };
+
+                if (e.target.closest('.like-btn')) {
+                    handleLikeClick(entryId, author);
+                } else if (e.target.closest('.delete-btn')) {
+                    performAction(async () => {
+                        showModal('confirmDelete', { message: '이 일기를 삭제합니다.', onConfirm: async () => { 
+                            await deleteDoc(doc(db, "journalApp", author, "entries", entryId));
+                            await deleteDoc(doc(db, "feedEntries", entryId));
+                        }});
+                    });
+                } else if (e.target.closest('.edit-btn')) {
+                    performAction(() => {
+                        showModal('edit', { content: entryData.content, onSave: async (newContent) => { 
+                            const entryRef = doc(db, "journalApp", author, "entries", entryId);
+                            await updateDoc(entryRef, { content: newContent });
+                            const feedRef = doc(db, "feedEntries", entryId);
+                            await updateDoc(feedRef, { content: newContent });
+                        }});
+                    });
+                } else if (entryData && (e.target.closest('.entry-content-clickable') || e.target.closest('.comment-btn'))) {
+                    const date = new Date(entryData.date);
+                    const adjustedDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
+                    const formattedDate = adjustedDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+                    showModal('viewEntry', { ...entryData, date: formattedDate, author: author });
+                }
+            });
+
+            const displayRandomQuote = () => { quoteElement.textContent = `"${gratitudeQuotes[Math.floor(Math.random() * gratitudeQuotes.length)]}"`; };
+            newQuoteBtn.addEventListener('click', displayRandomQuote);
+            displayRandomQuote();
+
+            // --- 앱 시작 ---
+            setupEmoticons();
+            initializeFirebase();
         });
     </script>
 </body>
 </html>
+
