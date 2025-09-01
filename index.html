@@ -89,7 +89,7 @@
 <body class="text-gray-800 flex items-center justify-center min-h-screen p-4">
 
     <div id="app-container" class="w-full max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-8 relative">
-        <div id="loading-overlay" class="absolute inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center rounded-2xl">
+        <div id="loading-overlay" class="absolute inset-0 bg-white bg-opacity-75 z-50 flex items-center justify-center rounded-2xl" style="display: none;">
             <div class="loader"></div>
         </div>
         
@@ -351,23 +351,30 @@
                     });
 
                     editPhotoInput.addEventListener('change', async (e) => {
-                        const file = e.target.files[0]; if (!file) return;
+                        const file = e.target.files[0];
+                        if (!file) return;
+
                         const loadingOverlay = document.getElementById('loading-overlay');
                         loadingOverlay.style.display = 'flex';
-                        const userId = auth.currentUser.uid;
-                        const filePath = `journalImages/${userId}/${Date.now()}-${file.name}`;
-                        const storageRef = ref(storage, filePath);
+
                         try {
+                            const userId = auth.currentUser.uid;
+                            const filePath = `journalImages/${userId}/${Date.now()}-${file.name}`;
+                            const storageRef = ref(storage, filePath);
+                            
                             await uploadBytes(storageRef, file);
                             const url = await getDownloadURL(storageRef);
+                            
                             const img = document.createElement('img');
                             img.src = url;
+
                             editEntryDiv.focus();
                             const selection = window.getSelection();
                             if (editSavedRange) {
                                 selection.removeAllRanges();
                                 selection.addRange(editSavedRange);
                             }
+
                             if (selection.getRangeAt && selection.rangeCount) {
                                 let range = selection.getRangeAt(0);
                                 range.deleteContents();
@@ -649,24 +656,45 @@
             journalEntry.addEventListener('blur', () => { const selection = window.getSelection(); if (selection.rangeCount > 0) savedRange = selection.getRangeAt(0); });
 
             journalPhoto.addEventListener('change', async (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                const userId = auth.currentUser.uid; const filePath = `journalImages/${userId}/${Date.now()}-${file.name}`;
-                const storageRef = ref(storage, filePath);
+                const file = e.target.files[0];
+                if (!file) return;
+
+                loadingOverlay.style.display = 'flex';
+
                 try {
-                    loadingOverlay.style.display = 'flex';
+                    const userId = auth.currentUser.uid;
+                    const filePath = `journalImages/${userId}/${Date.now()}-${file.name}`;
+                    const storageRef = ref(storage, filePath);
+                    
                     await uploadBytes(storageRef, file);
                     const url = await getDownloadURL(storageRef);
-                    const img = document.createElement('img'); img.src = url;
-                    journalEntry.focus(); const selection = window.getSelection();
-                    if (savedRange) { selection.removeAllRanges(); selection.addRange(savedRange); }
-                    if (selection.getRangeAt && selection.rangeCount) {
-                        let range = selection.getRangeAt(0); range.deleteContents(); range.insertNode(img);
-                        const space = document.createTextNode("\u00A0"); range.insertNode(space);
-                        range.setStartAfter(space); range.collapse(true);
-                        selection.removeAllRanges(); selection.addRange(range);
+                    const img = document.createElement('img');
+                    img.src = url;
+
+                    journalEntry.focus();
+                    const selection = window.getSelection();
+                    if (savedRange) {
+                        selection.removeAllRanges();
+                        selection.addRange(savedRange);
                     }
-                } catch (error) { console.error("사진 업로드 실패:", error); } 
-                finally { journalPhoto.value = ''; loadingOverlay.style.display = 'none'; }
+
+                    if (selection.getRangeAt && selection.rangeCount) {
+                        let range = selection.getRangeAt(0);
+                        range.deleteContents();
+                        range.insertNode(img);
+                        const space = document.createTextNode("\u00A0");
+                        range.insertNode(space);
+                        range.setStartAfter(space);
+                        range.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    }
+                } catch (error) {
+                    console.error("사진 업로드 실패:", error);
+                } finally {
+                    journalPhoto.value = '';
+                    loadingOverlay.style.display = 'none';
+                }
             });
 
             userTabsContainer.addEventListener('click', async (e) => {
